@@ -1,0 +1,40 @@
+# 環境變數（絕對不能上傳，內含 API 金鑰）
+.env
+.env.*
+
+# Python 快取
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Jupyter Notebook 快取
+.ipynb_checkpoints/
+*.ipynb
+
+# 資料檔案（太大，不放 GitHub）
+*.csv
+*.pdf
+*.xlsx
+*.json
+
+# 輸出資料夾
+output/
+shared_data/
+
+# 虛擬環境
+.venv/
+venv/
+env/
+*.egg-info/
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# VS Code 設定
+.vscode/
+*.code-workspace
+
+# Anaconda / Conda
+*.conda
