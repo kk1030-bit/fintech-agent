@@ -18,10 +18,6 @@ __pycache__/
 *.xlsx
 *.json
 
-# 輸出資料夾
-output/
-shared_data/
-
 # 虛擬環境
 .venv/
 venv/
