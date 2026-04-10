@@ -55,4 +55,4 @@ if __name__ == "__main__":
     )
     
     print(f"每股內在價值：{value} 億元/股")
-    print("DCF 模型載入成功 ✅")
+    print("DCF 模型載入成功 ")
