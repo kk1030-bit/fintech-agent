@@ -21,15 +21,6 @@ def upload_to_supabase(financial_data: list, gemini_result: dict = None) -> bool
             'stock_code': d['stock_code'],
             'year': d['year'],
             'company': d['company'],
-            'currency': d['currency'],
-            'revenue': d['revenue'],
-            'operating_income': d['operating_income'],
-            'net_income': d['net_income'],
-            'free_cash_flow': d['free_cash_flow'],
-            'summary': gemini_result.get('summary') if gemini_result else None,
-            'strengths': gemini_result.get('strengths') if gemini_result else None,
-            'risks': gemini_result.get('risks') if gemini_result else None,
-            'fcf_forecast': gemini_result.get('fcf_forecast') if gemini_result else None,
             'created_at': datetime.now().isoformat(),
         }
 
