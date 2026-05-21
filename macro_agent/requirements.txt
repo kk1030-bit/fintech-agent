@@ -5,5 +5,5 @@ supabase
 python-dotenv
 requests
 PyMuPDF
-finmind
+FinMind
 

@@ -3,14 +3,15 @@
 Usage:
     python main.py 2330
 
-The program reads Supabase first. If fundamental_data does not yet contain the
-financial fields needed by DCF, it falls back to the local/yfinance downloader so
-the demo can still run end to end.
+The program reads Supabase first. fundamental_data must contain FinMind numeric
+values either as dedicated columns or as the summary JSON payload written by
+seed_fundamental_data.py.
 """
 
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import sys
@@ -18,10 +19,11 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import yfinance as yf
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
+from report_downloader import fetch_price_history as fetch_finmind_price_history
+from report_downloader import fetch_stock_name
 from valuation_agent.chart_builder import (
     plot_dcf_waterfall,
     plot_financial_ratios,
@@ -31,59 +33,6 @@ from valuation_agent.dcf_model import calculate_dcf_details
 
 ROOT_DIR = Path(__file__).resolve().parent
 PAGE_SIZE = 1000
-
-TSMC_DEMO_RECORDS = [
-    {
-        "stock_code": "2330",
-        "year": "2021",
-        "company": "Taiwan Semiconductor Manufacturing Company Limited",
-        "currency": "TWD",
-        "revenue": 15874.15,
-        "operating_income": 6499.81,
-        "net_income": 5965.40,
-        "free_cash_flow": 5350.00,
-    },
-    {
-        "stock_code": "2330",
-        "year": "2022",
-        "company": "Taiwan Semiconductor Manufacturing Company Limited",
-        "currency": "TWD",
-        "revenue": 22638.91,
-        "operating_income": 11212.79,
-        "net_income": 10165.30,
-        "free_cash_flow": 6700.00,
-    },
-    {
-        "stock_code": "2330",
-        "year": "2023",
-        "company": "Taiwan Semiconductor Manufacturing Company Limited",
-        "currency": "TWD",
-        "revenue": 21617.36,
-        "operating_income": 9214.71,
-        "net_income": 8384.98,
-        "free_cash_flow": 5870.00,
-    },
-    {
-        "stock_code": "2330",
-        "year": "2024",
-        "company": "Taiwan Semiconductor Manufacturing Company Limited",
-        "currency": "TWD",
-        "revenue": 28943.08,
-        "operating_income": 13200.00,
-        "net_income": 11700.00,
-        "free_cash_flow": 8200.00,
-    },
-    {
-        "stock_code": "2330",
-        "year": "2025",
-        "company": "Taiwan Semiconductor Manufacturing Company Limited",
-        "currency": "TWD",
-        "revenue": 32000.00,
-        "operating_income": 14800.00,
-        "net_income": 13000.00,
-        "free_cash_flow": 9000.00,
-    },
-]
 
 
 def get_supabase_client() -> Client:
@@ -128,6 +77,42 @@ def load_macro_data(client: Client) -> pd.DataFrame:
     return macro_df
 
 
+def parse_summary_payload(value: Any) -> dict[str, Any]:
+    """Parse FinMind numeric payload stored in summary for compact schemas."""
+
+    if not isinstance(value, str) or not value.strip().startswith("{"):
+        return {}
+    try:
+        payload = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+
+    financials = payload.get("financials")
+    result = dict(financials) if isinstance(financials, dict) else {}
+    if payload.get("summary_text"):
+        result["_summary_text"] = payload["summary_text"]
+    if payload.get("data_source"):
+        result["data_source"] = payload["data_source"]
+    return result
+
+
+def normalize_fundamental_row(row: dict[str, Any]) -> dict[str, Any]:
+    """Merge dedicated columns with optional summary JSON payload."""
+
+    normalized = dict(row)
+    payload = parse_summary_payload(row.get("summary"))
+    for key, value in payload.items():
+        if key == "_summary_text":
+            normalized["summary_text"] = value
+        elif normalized.get(key) is None:
+            normalized[key] = value
+    if normalized.get("summary_text"):
+        normalized["summary"] = normalized["summary_text"]
+    return normalized
+
+
 def load_fundamental_data(client: Client, stock_code: str) -> dict[str, Any]:
     """Read one stock's rows from fundamental_data and package them as a dict."""
 
@@ -141,6 +126,7 @@ def load_fundamental_data(client: Client, stock_code: str) -> dict[str, Any]:
     if not rows:
         raise ValueError(f"fundamental_data 找不到 stock_code={stock_code} 的資料。")
 
+    rows = [normalize_fundamental_row(row) for row in rows]
     rows = sorted(rows, key=lambda row: str(row.get("year", "")))
     latest = rows[-1]
     return {
@@ -152,7 +138,9 @@ def load_fundamental_data(client: Client, stock_code: str) -> dict[str, Any]:
         "strengths": latest.get("strengths"),
         "risks": latest.get("risks"),
         "fcf_forecast": latest.get("fcf_forecast"),
-        "data_source": "supabase",
+        "data_source": latest.get("data_source") or "supabase",
+        "shares_outstanding": latest.get("shares_outstanding"),
+        "net_debt": latest.get("net_debt"),
     }
 
 
@@ -218,114 +206,21 @@ def has_financial_fields(fundamental_data: dict[str, Any]) -> bool:
     return bool(numbers_from_forecast(fundamental_data.get("fcf_forecast")))
 
 
-def fetch_price_history(stock_code: str) -> list[dict[str, Any]]:
-    """Fetch monthly close prices for the stock using yfinance."""
-
-    ticker_symbol = f"{stock_code}.TW" if stock_code.isdigit() else stock_code
-    try:
-        hist = yf.Ticker(ticker_symbol).history(period="1y", interval="1mo")
-    except Exception:
-        return []
-
-    if hist.empty or "Close" not in hist.columns:
-        return []
-
-    records = []
-    for date, row in hist.dropna(subset=["Close"]).iterrows():
-        records.append({"date": date.strftime("%Y-%m"), "price": float(row["Close"])})
-    return records[-12:]
-
-
-def fetch_stock_info(stock_code: str) -> dict[str, Any]:
-    """Fetch lightweight stock metadata from yfinance."""
-
-    ticker_symbol = f"{stock_code}.TW" if stock_code.isdigit() else stock_code
-    try:
-        info = yf.Ticker(ticker_symbol).info
-    except Exception:
-        return {}
-    return {
-        "company": info.get("longName") or info.get("shortName"),
-        "shares_outstanding": info.get("sharesOutstanding"),
-        "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
-    }
-
-
-def fetch_live_fundamentals(stock_code: str) -> dict[str, Any]:
-    """Fetch financial rows locally when Supabase lacks numeric fields."""
-
-    print("fundamental_data 缺少 DCF 所需財務欄位，改用 yfinance/本地下載模組補資料。")
-    if stock_code == "2330":
-        print("使用台積電 Demo 財務數字保證展示流程可跑。")
-        return {
-            "stock_code": stock_code,
-            "company": "Taiwan Semiconductor Manufacturing Company Limited",
-            "latest": TSMC_DEMO_RECORDS[-1],
-            "records": TSMC_DEMO_RECORDS,
-            "summary": None,
-            "strengths": [],
-            "risks": [],
-            "fcf_forecast": None,
-            "data_source": "demo_fallback",
-            "shares_outstanding": 25_945_000_000,
-            "current_price": None,
-            "price_history": [],
-        }
-
-    try:
-        from report_downloader import download_financial_report
-
-        records = download_financial_report(stock_code, years=5)
-    except Exception as exc:
-        print(f"report_downloader 執行失敗：{exc}")
-        records = []
-
-    records = [row for row in records if row.get("free_cash_flow") is not None]
-    info = fetch_stock_info(stock_code)
-
-    if not records and stock_code == "2330":
-        print("yfinance 未取得完整資料，使用台積電 Demo 財務數字保證展示流程可跑。")
-        records = TSMC_DEMO_RECORDS
-        info.setdefault("company", "Taiwan Semiconductor Manufacturing Company Limited")
-        info.setdefault("shares_outstanding", 25_945_000_000)
-
-    if not records:
-        raise ValueError("無法取得可用財務資料，請先補 fundamental_data 或檢查 yfinance。")
-
-    records = sorted(records, key=lambda row: str(row.get("year", "")))
-    company = info.get("company") or records[-1].get("company") or stock_code
-    return {
-        "stock_code": stock_code,
-        "company": company,
-        "latest": records[-1],
-        "records": records,
-        "summary": None,
-        "strengths": [],
-        "risks": [],
-        "fcf_forecast": None,
-        "data_source": "local_yfinance",
-        "shares_outstanding": info.get("shares_outstanding"),
-        "current_price": info.get("current_price"),
-        "price_history": fetch_price_history(stock_code),
-    }
-
-
 def ensure_complete_fundamentals(fundamental_data: dict[str, Any]) -> dict[str, Any]:
-    """Use Supabase data if complete; otherwise enrich with local/yfinance data."""
+    """Validate Supabase financial values and enrich charts with FinMind price."""
 
-    if has_financial_fields(fundamental_data):
-        if not fundamental_data.get("price_history"):
-            fundamental_data["price_history"] = fetch_price_history(fundamental_data["stock_code"])
-        stock_info = fetch_stock_info(fundamental_data["stock_code"])
-        fundamental_data.setdefault("shares_outstanding", stock_info.get("shares_outstanding"))
-        fundamental_data.setdefault("current_price", stock_info.get("current_price"))
-        return fundamental_data
+    stock_code = fundamental_data["stock_code"]
+    if not has_financial_fields(fundamental_data):
+        raise ValueError(
+            "fundamental_data 缺少 DCF 所需的 FinMind 數值。"
+            f"請先執行：python seed_fundamental_data.py {stock_code}"
+        )
 
-    enriched = fetch_live_fundamentals(fundamental_data["stock_code"])
-    enriched["summary"] = fundamental_data.get("summary")
-    enriched["risks"] = fundamental_data.get("risks") or []
-    enriched["strengths"] = fundamental_data.get("strengths") or []
-    return enriched
+    if not fundamental_data.get("price_history"):
+        fundamental_data["price_history"] = fetch_finmind_price_history(stock_code)
+    if not fundamental_data.get("company") or fundamental_data["company"] == stock_code:
+        fundamental_data["company"] = fetch_stock_name(stock_code)
+    return fundamental_data
 
 
 def normalize_money_to_100m(values: list[float]) -> list[float]:
@@ -372,6 +267,29 @@ def env_float(names: list[str], default: float) -> float:
     return default
 
 
+def env_float_optional(names: list[str]) -> float | None:
+    """Read one of several environment variables as float, or None."""
+
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            parsed = to_float(value)
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def money_to_100m(value: Any) -> float | None:
+    """Convert a single raw TWD value into NT$100 million units when needed."""
+
+    parsed = to_float(value)
+    if parsed is None:
+        return None
+    if abs(parsed) >= 10_000_000:
+        return parsed / 100_000_000
+    return parsed
+
+
 def shares_to_million(value: Any) -> float | None:
     shares = to_float(value)
     if shares is None:
@@ -388,15 +306,21 @@ def calculate_intrinsic_value(fundamental_data: dict[str, Any]) -> dict[str, Any
     free_cash_flows = build_fcf_forecast(fundamental_data)
     wacc = env_float(["DCF_WACC", "DEFAULT_WACC"], 0.09)
     terminal_growth = env_float(["TERMINAL_GROWTH", "DCF_TERMINAL_GROWTH"], 0.03)
-    net_debt = env_float([f"NET_DEBT_{stock_code}", "DEFAULT_NET_DEBT"], 0.0)
+    net_debt_override = env_float_optional([f"NET_DEBT_{stock_code}", "DEFAULT_NET_DEBT"])
+    net_debt = money_to_100m(net_debt_override)
+    if net_debt is None:
+        net_debt = money_to_100m(fundamental_data.get("net_debt"))
+    if net_debt is None:
+        net_debt = money_to_100m(fundamental_data.get("latest", {}).get("net_debt"))
+    if net_debt is None:
+        net_debt = 0.0
 
-    shares = env_float([f"SHARES_OUTSTANDING_{stock_code}", "DEFAULT_SHARES_OUTSTANDING"], 0.0)
+    shares = env_float_optional([f"SHARES_OUTSTANDING_{stock_code}", "DEFAULT_SHARES_OUTSTANDING"])
     shares_outstanding = shares_to_million(shares) or shares_to_million(fundamental_data.get("shares_outstanding"))
-    if not shares_outstanding and stock_code == "2330":
-        shares_outstanding = 25_945
     if not shares_outstanding:
-        shares_outstanding = 1.0
-        print("提醒：未取得流通股數，DCF 暫以 1 百萬股作為預設值。")
+        shares_outstanding = shares_to_million(fundamental_data.get("latest", {}).get("shares_outstanding"))
+    if not shares_outstanding:
+        raise ValueError("fundamental_data 缺少 shares_outstanding，無法計算每股內在價值。")
 
     details = calculate_dcf_details(
         free_cash_flows=free_cash_flows,

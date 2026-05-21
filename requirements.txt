@@ -1,11 +1,10 @@
 pandas
-yfinance
 matplotlib
 fpdf2
 supabase
 python-dotenv
 requests
 PyMuPDF
-finmind
+FinMind
 fredapi
 google-genai

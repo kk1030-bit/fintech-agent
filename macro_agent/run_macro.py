@@ -50,14 +50,14 @@ def main():
         print(f"  -> ❌ FRED 爬蟲執行失敗: {e}")
         
     # -------------------------
-    # 步驟二：爬取 Yahoo Finance 數據
+    # 步驟二：爬取 FinMind 台灣市場數據
     # -------------------------
     try:
-        print("\n[2/3] 準備抓取 Yahoo Finance 大盤數據...")
+        print("\n[2/3] 準備抓取 FinMind 台灣市場數據...")
         market_data = get_market_data()
-        print(f"  -> ✅ Yahoo Finance 抓取成功，共 {len(market_data)} 筆。")
+        print(f"  -> ✅ FinMind 抓取成功，共 {len(market_data)} 筆。")
     except Exception as e:
-        print(f"  -> ❌ Yahoo Finance 爬蟲執行失敗: {e}")
+        print(f"  -> ❌ FinMind 爬蟲執行失敗: {e}")
         
     # -------------------------
     # 整合數據

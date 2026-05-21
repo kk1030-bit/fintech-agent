@@ -1,68 +1,191 @@
+"""Upload fundamental data to Supabase.
+
+The current project database may not yet have dedicated numeric columns such as
+revenue/free_cash_flow. This uploader detects the available table schema:
+
+- If numeric columns exist, it writes the values into those columns.
+- If they do not exist, it stores the same FinMind numeric payload as JSON in
+  the existing summary column so main.py can still read real Supabase data.
+"""
+
+from __future__ import annotations
+
+import json
 import os
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
 from dotenv import load_dotenv
 from supabase import create_client
-from datetime import datetime
 
-# 載入 .env
-load_dotenv()
+ROOT_DIR = Path(__file__).resolve().parent
+NUMERIC_COLUMNS = {
+    "currency",
+    "revenue",
+    "operating_income",
+    "net_income",
+    "operating_cash_flow",
+    "capital_expenditure",
+    "free_cash_flow",
+    "shares_outstanding",
+    "net_debt",
+    "pe_ratio",
+    "pb_ratio",
+    "fcf_forecast",
+    "data_source",
+}
 
-def upload_to_supabase(financial_data: list, gemini_result: dict = None) -> bool:
-    """上傳財務數據到 Supabase fundamental_data 表"""
-    
+
+def supabase_config() -> tuple[str, str]:
+    """Read Supabase config from .env."""
+
+    load_dotenv(ROOT_DIR / ".env")
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
+    if not url or not key:
+        raise ValueError("找不到 SUPABASE_URL 或 SUPABASE_KEY，請確認 .env。")
+    return url, key
+
+
+def get_table_columns(table_name: str = "fundamental_data") -> set[str]:
+    """Read table columns from Supabase PostgREST OpenAPI metadata."""
+
+    url, key = supabase_config()
+    response = requests.get(
+        url.rstrip("/") + "/rest/v1/",
+        headers={"apikey": key, "Authorization": f"Bearer {key}"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    definition = response.json().get("definitions", {}).get(table_name, {})
+    return set((definition.get("properties") or {}).keys())
+
+
+def text_or_json(value: Any) -> str | None:
+    """Convert values into a text-safe representation for existing text columns."""
+
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def build_summary_payload(financial_row: dict[str, Any], gemini_result: dict[str, Any] | None) -> str:
+    """Store FinMind numbers in summary when numeric Supabase columns are absent."""
+
+    payload = {
+        "summary_text": gemini_result.get("summary") if gemini_result else "FinMind 財務數據已匯入，供 DCF 模型使用。",
+        "data_source": financial_row.get("data_source", "finmind"),
+        "financials": {
+            key: financial_row.get(key)
+            for key in [
+                "currency",
+                "revenue",
+                "operating_income",
+                "net_income",
+                "operating_cash_flow",
+                "capital_expenditure",
+                "free_cash_flow",
+                "shares_outstanding",
+                "net_debt",
+                "pe_ratio",
+                "pb_ratio",
+                "fcf_forecast",
+                "data_source",
+            ]
+            if financial_row.get(key) is not None
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False)
+
+
+def build_record(
+    financial_row: dict[str, Any],
+    gemini_result: dict[str, Any] | None,
+    columns: set[str],
+) -> dict[str, Any]:
+    """Build an insert/update record that matches the current table schema."""
+
+    record: dict[str, Any] = {
+        "stock_code": str(financial_row["stock_code"]),
+        "year": str(financial_row["year"]),
+        "company": financial_row.get("company") or str(financial_row["stock_code"]),
+        "created_at": datetime.now().isoformat(),
+    }
+
+    has_numeric_columns = {"revenue", "free_cash_flow"}.issubset(columns)
+    if has_numeric_columns:
+        record["summary"] = gemini_result.get("summary") if gemini_result else None
+        for column in NUMERIC_COLUMNS:
+            if column in columns and financial_row.get(column) is not None:
+                record[column] = financial_row.get(column)
+        if "fcf_forecast" in columns and financial_row.get("fcf_forecast") is None and gemini_result:
+            record["fcf_forecast"] = gemini_result.get("fcf_forecast")
+    else:
+        record["summary"] = build_summary_payload(financial_row, gemini_result)
+
+    if gemini_result:
+        if "strengths" in columns:
+            record["strengths"] = text_or_json(gemini_result.get("strengths"))
+        if "risks" in columns:
+            record["risks"] = text_or_json(gemini_result.get("risks"))
+    elif "risks" in columns:
+        record["risks"] = None
+
+    return {key: value for key, value in record.items() if key in columns}
+
+
+def upload_to_supabase(financial_data: list[dict[str, Any]], gemini_result: dict[str, Any] | None = None) -> bool:
+    """Upload financial data to Supabase fundamental_data."""
+
+    url, key = supabase_config()
     supabase = create_client(url, key)
+    columns = get_table_columns("fundamental_data")
+    missing_numeric = sorted({"revenue", "free_cash_flow"} - columns)
+    if missing_numeric:
+        print("fundamental_data 尚未有獨立數值欄位，會先把 FinMind 數值寫入 summary JSON。")
 
-    for d in financial_data:
-        if d.get('revenue') is None:
+    for item in financial_data:
+        if item.get("revenue") is None or item.get("free_cash_flow") is None:
             continue
-
-        record = {
-            'stock_code': d['stock_code'],
-            'year': d['year'],
-            'company': d['company'],
-            'currency': d['currency'],
-            'revenue': d['revenue'],
-            'operating_income': d['operating_income'],
-            'net_income': d['net_income'],
-            'free_cash_flow': d['free_cash_flow'],
-            'summary': gemini_result.get('summary') if gemini_result else None,
-            'strengths': gemini_result.get('strengths') if gemini_result else None,
-            'risks': gemini_result.get('risks') if gemini_result else None,
-            'fcf_forecast': gemini_result.get('fcf_forecast') if gemini_result else None,
-            'created_at': datetime.now().isoformat(),
-        }
+        record = build_record(item, gemini_result, columns)
+        stock_code = str(item["stock_code"])
+        year = str(item["year"])
 
         try:
-            # 先檢查是否已存在
-            existing = supabase.table('fundamental_data') \
-                .select('id') \
-                .eq('stock_code', d['stock_code']) \
-                .eq('year', d['year']) \
+            existing = (
+                supabase.table("fundamental_data")
+                .select("id")
+                .eq("stock_code", stock_code)
+                .eq("year", year)
                 .execute()
-
+            )
             if existing.data:
-                # 已存在則更新
-                supabase.table('fundamental_data') \
-                    .update(record) \
-                    .eq('stock_code', d['stock_code']) \
-                    .eq('year', d['year']) \
+                (
+                    supabase.table("fundamental_data")
+                    .update(record)
+                    .eq("stock_code", stock_code)
+                    .eq("year", year)
                     .execute()
-                print(f"  🔄 更新：{d['stock_code']} {d['year']}年")
+                )
+                print(f"  [OK] 更新 {stock_code} {year}")
             else:
-                # 不存在則新增
-                supabase.table('fundamental_data').insert(record).execute()
-                print(f"  ✅ 新增：{d['stock_code']} {d['year']}年")
-
-        except Exception as e:
-            print(f"  ❌ 失敗：{d['stock_code']} {d['year']}年 → {e}")
+                supabase.table("fundamental_data").insert(record).execute()
+                print(f"  [OK] 新增 {stock_code} {year}")
+        except Exception as exc:
+            print(f"  [ERROR] 上傳失敗 {stock_code} {year}: {exc}")
             return False
 
     return True
 
+
 if __name__ == "__main__":
     from report_downloader import download_financial_report
+
     data = download_financial_report("2330", years=5)
-    print("\n正在上傳到 Supabase...")
-    success = upload_to_supabase(data)
-    print("\n✅ 上傳完成！" if success else "\n❌ 上傳失敗")
+    print("\n開始上傳到 Supabase...")
+    ok = upload_to_supabase(data)
+    print("\n上傳完成" if ok else "\n上傳失敗")
