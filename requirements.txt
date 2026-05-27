@@ -1,6 +1,7 @@
 pandas
 matplotlib
 fpdf2
+Flask
 supabase
 python-dotenv
 requests

@@ -103,10 +103,27 @@ def parse_summary_payload(value: Any) -> dict[str, Any]:
     return result
 
 
+def parse_json_field(value: Any) -> Any:
+    """Decode JSON strings from text columns when possible."""
+
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text or text[0] not in "[{":
+        return value
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return value
+
+
 def normalize_fundamental_row(row: dict[str, Any]) -> dict[str, Any]:
     """Merge dedicated columns with optional summary JSON payload."""
 
     normalized = dict(row)
+    for key in ["strengths", "risks", "fcf_forecast"]:
+        if key in normalized:
+            normalized[key] = parse_json_field(normalized.get(key))
     payload = parse_summary_payload(row.get("summary"))
     for key, value in payload.items():
         if key == "_summary_text":

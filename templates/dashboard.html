@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多智能體投資分析系統</title>
+  <style>
+    :root {
+      --ink: #10232a;
+      --muted: #5f7378;
+      --line: #d7e2df;
+      --panel: #ffffff;
+      --soft: #eef6f3;
+      --blue: #1d6f96;
+      --blue-deep: #10445e;
+      --green: #0f7b63;
+      --gold: #b57922;
+      --danger: #9b3a2e;
+      --shadow: 0 14px 38px rgba(21, 47, 54, .12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background:
+        linear-gradient(135deg, rgba(29,111,150,.12), transparent 34%),
+        linear-gradient(315deg, rgba(15,123,99,.10), transparent 30%),
+        #f7faf9;
+    }
+
+    .shell { width: min(1180px, calc(100vw - 32px)); margin: 0 auto; padding: 26px 0 42px; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    h1 { margin: 0; font-size: 28px; letter-spacing: 0; }
+    .subtitle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .status {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .search {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .field {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 7px;
+      padding: 0 12px;
+    }
+    .field span { color: var(--muted); font-size: 12px; flex: 0 0 auto; }
+    input {
+      width: 100%;
+      height: 44px;
+      border: 0;
+      outline: none;
+      font-size: 20px;
+      color: var(--ink);
+      background: transparent;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    button {
+      height: 44px;
+      border: 0;
+      border-radius: 7px;
+      padding: 0 18px;
+      color: #fff;
+      background: var(--blue-deep);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { background: var(--blue); }
+    button:disabled { opacity: .55; cursor: progress; }
+
+    .quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+    .chip {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--blue-deep);
+      border-radius: 18px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .chip:hover { border-color: var(--blue); }
+
+    .grid { display: grid; grid-template-columns: 330px 1fr; gap: 14px; align-items: start; }
+    .panel {
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+    }
+    .body { padding: 14px; }
+    .metric { display: grid; gap: 4px; margin-bottom: 12px; }
+    .label { color: var(--muted); font-size: 12px; }
+    .value { font-size: 30px; font-weight: 800; color: var(--green); }
+    .small { color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .flow { display: grid; gap: 8px; }
+    .flow div {
+      border-left: 4px solid var(--blue);
+      background: #f5faf9;
+      padding: 8px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .summary { line-height: 1.8; font-size: 14px; margin: 0; }
+    .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    ul { margin: 0; padding-left: 20px; line-height: 1.7; font-size: 13px; }
+    .charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+    figure {
+      margin: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    figure img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #fff; }
+    figcaption { padding: 8px 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .link {
+      display: inline-flex;
+      align-items: center;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--blue-deep);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .empty {
+      padding: 38px 16px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.66);
+    }
+    .error { color: var(--danger); font-weight: 700; }
+
+    @media (max-width: 900px) {
+      .topbar, .grid, .lists, .charts, .search { grid-template-columns: 1fr; display: grid; }
+      .status { white-space: normal; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div>
+        <h1>多智能體投資分析系統</h1>
+        <p class="subtitle">FinMind / Supabase / DCF / 圖表 / PDF 報告</p>
+      </div>
+      <div class="status" id="status">系統待命</div>
+    </div>
+
+    <form class="search" id="form">
+      <label class="field">
+        <span>股票代號</span>
+        <input id="stockCode" inputmode="numeric" autocomplete="off" value="2330">
+      </label>
+      <button id="submit" type="submit">查詢分析</button>
+    </form>
+
+    <div class="quick" id="quick"></div>
+
+    <section class="grid">
+      <aside class="panel">
+        <h2>估值結論</h2>
+        <div class="body" id="valuation">
+          <div class="empty">輸入台股代號後開始分析</div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <h2>分析結果</h2>
+        <div class="body" id="result">
+          <div class="empty">查詢結果會顯示在這裡</div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector("#form");
+    const input = document.querySelector("#stockCode");
+    const submit = document.querySelector("#submit");
+    const statusBox = document.querySelector("#status");
+    const valuation = document.querySelector("#valuation");
+    const result = document.querySelector("#result");
+    const quick = document.querySelector("#quick");
+
+    const fallbackStocks = [
+      { stock_code: "2330", company: "台積電" },
+      { stock_code: "2317", company: "鴻海" },
+      { stock_code: "2454", company: "聯發科" },
+      { stock_code: "1303", company: "南亞" }
+    ];
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function listItems(items) {
+      const values = Array.isArray(items) ? items : [];
+      if (!values.length) return "<li>尚無資料</li>";
+      return values.map(item => `<li>${escapeHtml(item)}</li>`).join("");
+    }
+
+    function setLoading(isLoading) {
+      submit.disabled = isLoading;
+      statusBox.textContent = isLoading ? "分析中，正在抓取資料與產生報告" : "系統待命";
+    }
+
+    function renderQuick(stocks) {
+      const merged = stocks.length ? stocks : fallbackStocks;
+      quick.innerHTML = merged.slice(0, 10).map(item =>
+        `<button class="chip" type="button" data-code="${escapeHtml(item.stock_code)}">${escapeHtml(item.stock_code)} ${escapeHtml(item.company)}</button>`
+      ).join("");
+      quick.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => {
+          input.value = button.dataset.code;
+          form.requestSubmit();
+        });
+      });
+    }
+
+    async function loadKnownStocks() {
+      try {
+        const response = await fetch("/api/stocks");
+        const stocks = await response.json();
+        renderQuick(stocks);
+      } catch {
+        renderQuick(fallbackStocks);
+      }
+    }
+
+    function render(data) {
+      const charts = (data.charts || []).filter(Boolean);
+      valuation.innerHTML = `
+        <div class="metric">
+          <div class="label">${escapeHtml(data.company)}（${escapeHtml(data.stock_code)}）</div>
+          <div class="value">${Number(data.intrinsic_value).toLocaleString("zh-TW", { maximumFractionDigits: 2 })}</div>
+          <div class="small">每股內在價值，單位：元 / 股</div>
+        </div>
+        <div class="flow">
+          <div>資料來源：${escapeHtml(data.data_source || "finmind")}</div>
+          <div>最新年度：${escapeHtml(data.latest_year)}</div>
+          <div>WACC：${Number(data.wacc * 100).toFixed(1)}%</div>
+          <div>終端成長率：${Number(data.terminal_growth * 100).toFixed(1)}%</div>
+        </div>
+        <div class="actions">
+          ${data.pdf ? `<a class="link" href="${data.pdf}" target="_blank">開啟 PDF 報告</a>` : ""}
+        </div>
+      `;
+
+      result.innerHTML = `
+        <p class="summary">${escapeHtml(data.summary)}</p>
+        <div class="lists">
+          <div>
+            <div class="label">主要優勢</div>
+            <ul>${listItems(data.strengths)}</ul>
+          </div>
+          <div>
+            <div class="label">主要風險</div>
+            <ul>${listItems(data.risks)}</ul>
+          </div>
+        </div>
+        <div class="lists">
+          <div>
+            <div class="label">五年 FCF 預測（億元）</div>
+            <ul>${listItems((data.fcf_forecast || []).map(v => Number(v).toLocaleString("zh-TW", { maximumFractionDigits: 2 })))}</ul>
+          </div>
+          <div>
+            <div class="label">輸出狀態</div>
+            <ul>
+              <li>已更新 Supabase fundamental_data</li>
+              <li>已產出三張 PNG 圖表</li>
+              <li>已產出 PDF 報告</li>
+            </ul>
+          </div>
+        </div>
+        <div class="charts">
+          ${charts.map((src, index) => `
+            <figure>
+              <img src="${src}" alt="chart ${index + 1}">
+              <figcaption>${["股價走勢", "P/E 與 P/B", "DCF 瀑布圖"][index] || "分析圖表"}</figcaption>
+            </figure>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const stockCode = input.value.trim();
+      if (!stockCode) return;
+      setLoading(true);
+      valuation.innerHTML = `<div class="empty">正在分析 ${escapeHtml(stockCode)}</div>`;
+      result.innerHTML = `<div class="empty">FinMind 抓取、Supabase 更新、DCF 和 PDF 產生需要一點時間</div>`;
+      try {
+        const response = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stock_code: stockCode })
+        });
+        const payload = await response.json();
+        if (!payload.ok) throw new Error(payload.error || "分析失敗");
+        render(payload.result);
+        statusBox.textContent = `${payload.result.stock_code} 分析完成`;
+        loadKnownStocks();
+      } catch (error) {
+        valuation.innerHTML = `<div class="empty error">${escapeHtml(error.message)}</div>`;
+        result.innerHTML = `<div class="empty">請確認股票代號是否為台股上市櫃代號，或稍後再試。</div>`;
+        statusBox.textContent = "分析失敗";
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    loadKnownStocks();
+    form.requestSubmit();
+  </script>
+</body>
+</html>
