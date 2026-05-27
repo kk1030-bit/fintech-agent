@@ -4,8 +4,9 @@ The current project database may not yet have dedicated numeric columns such as
 revenue/free_cash_flow. This uploader detects the available table schema:
 
 - If numeric columns exist, it writes the values into those columns.
-- If they do not exist, it stores the same FinMind numeric payload as JSON in
-  the existing summary column so main.py can still read real Supabase data.
+- If they do not exist, it stores the same FinMind numeric payload and analysis
+  payload as JSON in the existing summary column so main.py can still read real
+  Supabase data.
 """
 
 from __future__ import annotations
@@ -73,11 +74,11 @@ def text_or_json(value: Any) -> str | None:
     return json.dumps(value, ensure_ascii=False)
 
 
-def build_summary_payload(financial_row: dict[str, Any], gemini_result: dict[str, Any] | None) -> str:
-    """Store FinMind numbers in summary when numeric Supabase columns are absent."""
+def build_summary_payload(financial_row: dict[str, Any], analysis_result: dict[str, Any] | None) -> str:
+    """Store FinMind numbers and analysis in summary for compact schemas."""
 
     payload = {
-        "summary_text": gemini_result.get("summary") if gemini_result else "FinMind 財務數據已匯入，供 DCF 模型使用。",
+        "summary_text": analysis_result.get("summary") if analysis_result else "FinMind 財務數據已匯入，供 DCF 模型使用。",
         "data_source": financial_row.get("data_source", "finmind"),
         "financials": {
             key: financial_row.get(key)
@@ -99,12 +100,20 @@ def build_summary_payload(financial_row: dict[str, Any], gemini_result: dict[str
             if financial_row.get(key) is not None
         },
     }
+    if analysis_result:
+        payload["analysis"] = {
+            "method": analysis_result.get("analysis_method", "rule_based_finmind"),
+            "strengths": analysis_result.get("strengths") or [],
+            "risks": analysis_result.get("risks") or [],
+            "fcf_forecast": analysis_result.get("fcf_forecast") or [],
+            "created_at": analysis_result.get("created_at"),
+        }
     return json.dumps(payload, ensure_ascii=False)
 
 
 def build_record(
     financial_row: dict[str, Any],
-    gemini_result: dict[str, Any] | None,
+    analysis_result: dict[str, Any] | None,
     columns: set[str],
 ) -> dict[str, Any]:
     """Build an insert/update record that matches the current table schema."""
@@ -118,27 +127,27 @@ def build_record(
 
     has_numeric_columns = {"revenue", "free_cash_flow"}.issubset(columns)
     if has_numeric_columns:
-        record["summary"] = gemini_result.get("summary") if gemini_result else None
+        record["summary"] = analysis_result.get("summary") if analysis_result else None
         for column in NUMERIC_COLUMNS:
             if column in columns and financial_row.get(column) is not None:
                 record[column] = financial_row.get(column)
-        if "fcf_forecast" in columns and financial_row.get("fcf_forecast") is None and gemini_result:
-            record["fcf_forecast"] = gemini_result.get("fcf_forecast")
+        if "fcf_forecast" in columns and financial_row.get("fcf_forecast") is None and analysis_result:
+            record["fcf_forecast"] = analysis_result.get("fcf_forecast")
     else:
-        record["summary"] = build_summary_payload(financial_row, gemini_result)
+        record["summary"] = build_summary_payload(financial_row, analysis_result)
 
-    if gemini_result:
+    if analysis_result:
         if "strengths" in columns:
-            record["strengths"] = text_or_json(gemini_result.get("strengths"))
+            record["strengths"] = text_or_json(analysis_result.get("strengths"))
         if "risks" in columns:
-            record["risks"] = text_or_json(gemini_result.get("risks"))
+            record["risks"] = text_or_json(analysis_result.get("risks"))
     elif "risks" in columns:
         record["risks"] = None
 
     return {key: value for key, value in record.items() if key in columns}
 
 
-def upload_to_supabase(financial_data: list[dict[str, Any]], gemini_result: dict[str, Any] | None = None) -> bool:
+def upload_to_supabase(financial_data: list[dict[str, Any]], analysis_result: dict[str, Any] | None = None) -> bool:
     """Upload financial data to Supabase fundamental_data."""
 
     url, key = supabase_config()
@@ -151,7 +160,7 @@ def upload_to_supabase(financial_data: list[dict[str, Any]], gemini_result: dict
     for item in financial_data:
         if item.get("revenue") is None or item.get("free_cash_flow") is None:
             continue
-        record = build_record(item, gemini_result, columns)
+        record = build_record(item, analysis_result, columns)
         stock_code = str(item["stock_code"])
         year = str(item["year"])
 

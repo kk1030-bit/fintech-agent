@@ -2,7 +2,7 @@ import sys
 import time
 from datetime import datetime
 from report_downloader import download_financial_report
-from gemini_analyzer import analyze_financials
+from financial_analyzer import analyze_financials
 from fundamental_uploader import upload_to_supabase
 
 # 台灣市值前100大對照表
@@ -32,12 +32,12 @@ STOCK_NAMES = {
 
 def print_progress(current, total, stock_code, company):
     pct = int(current / total * 40)
-    bar = "█" * pct + "░" * (40 - pct)
+    bar = "#" * pct + "." * (40 - pct)
     print(f"\r[{bar}] {current}/{total} {stock_code} {company}    ", end="", flush=True)
 
 def run(stock_list):
     total = len(stock_list)
-    print(f"🚀 開始執行，共 {total} 支股票\n")
+    print(f"[START] 開始執行，共 {total} 支股票\n")
     
     results = []
     
@@ -46,18 +46,18 @@ def run(stock_list):
         print_progress(i + 1, total, code, name)
         
         start_time = datetime.now()
-        status = "✅"
+        status = "[OK]"
         note = ""
         
         try:
             data = download_financial_report(code, years=5)
-            gemini_result = analyze_financials(data, code, name)
-            success = upload_to_supabase(data, gemini_result)
+            analysis_result = analyze_financials(data, code, name)
+            success = upload_to_supabase(data, analysis_result)
             if not success:
-                status = "❌"
+                status = "[ERROR]"
                 note = "上傳失敗"
         except Exception as e:
-            status = "❌"
+            status = "[ERROR]"
             note = str(e)[:40]
         
         upload_time = datetime.now().strftime("%H:%M:%S")
@@ -74,8 +74,8 @@ def run(stock_list):
         print(f"{code:<8} {name:<20} {status:<6} {upload_time:<10} {note}")
     print(f"{'='*70}")
     
-    success_count = sum(1 for r in results if r[2] == "✅")
-    print(f"\n✅ 成功：{success_count} 支　❌ 失敗：{total - success_count} 支")
+    success_count = sum(1 for r in results if r[2] == "[OK]")
+    print(f"\n[OK] 成功：{success_count} 支　[ERROR] 失敗：{total - success_count} 支")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

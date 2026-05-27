@@ -78,7 +78,7 @@ def load_macro_data(client: Client) -> pd.DataFrame:
 
 
 def parse_summary_payload(value: Any) -> dict[str, Any]:
-    """Parse FinMind numeric payload stored in summary for compact schemas."""
+    """Parse FinMind numeric and analysis payloads stored in summary."""
 
     if not isinstance(value, str) or not value.strip().startswith("{"):
         return {}
@@ -91,6 +91,11 @@ def parse_summary_payload(value: Any) -> dict[str, Any]:
 
     financials = payload.get("financials")
     result = dict(financials) if isinstance(financials, dict) else {}
+    analysis = payload.get("analysis")
+    if isinstance(analysis, dict):
+        for key in ["strengths", "risks", "fcf_forecast"]:
+            if analysis.get(key) is not None:
+                result[key] = analysis[key]
     if payload.get("summary_text"):
         result["_summary_text"] = payload["summary_text"]
     if payload.get("data_source"):
@@ -158,7 +163,7 @@ def to_float(value: Any) -> float | None:
 
 
 def numbers_from_forecast(value: Any) -> list[float]:
-    """Parse a list of numeric FCF forecast values from Gemini/Supabase output."""
+    """Parse a list of numeric FCF forecast values from Supabase output."""
 
     if value is None:
         return []

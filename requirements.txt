@@ -7,4 +7,3 @@ requests
 PyMuPDF
 FinMind
 fredapi
-google-genai
