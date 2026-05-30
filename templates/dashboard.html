@@ -346,7 +346,12 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ stock_code: stockCode })
         });
-        const payload = await response.json();
+        const contentType = response.headers.get("content-type") || "";
+        const rawText = await response.text();
+        if (!contentType.includes("application/json")) {
+          throw new Error("伺服器暫時回傳非 JSON 內容，請稍後再查一次。");
+        }
+        const payload = JSON.parse(rawText);
         if (!payload.ok) throw new Error(payload.error || "分析失敗");
         render(payload.result);
         statusBox.textContent = `${payload.result.stock_code} 分析完成`;
