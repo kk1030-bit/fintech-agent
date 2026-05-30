@@ -16,8 +16,16 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 
-plt.rcParams["font.family"] = "Microsoft JhengHei"
+FONT_PATH = PROJECT_ROOT / "assets" / "fonts" / "NotoSansCJKtc-Regular.otf"
+if FONT_PATH.exists():
+    font_manager.fontManager.addfont(str(FONT_PATH))
+    CHART_FONT_FAMILY = font_manager.FontProperties(fname=str(FONT_PATH)).get_name()
+else:
+    CHART_FONT_FAMILY = "Microsoft JhengHei"
+
+plt.rcParams["font.family"] = CHART_FONT_FAMILY
 plt.rcParams["axes.unicode_minus"] = False
 
 PRIMARY_BLUE = "#0F6B8F"

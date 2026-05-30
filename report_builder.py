@@ -16,22 +16,28 @@ from fpdf import FPDF
 
 ROOT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT_DIR / "output"
-FONT_PATH = Path(r"C:\Windows\Fonts\msjh.ttc")
-FONT_BOLD_PATH = Path(r"C:\Windows\Fonts\msjhbd.ttc")
+FONT_CANDIDATES = [
+    ROOT_DIR / "assets" / "fonts" / "NotoSansCJKtc-Regular.otf",
+    Path(r"C:\Windows\Fonts\msjh.ttc"),
+    Path(r"C:\Windows\Fonts\msjhbd.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    Path("/usr/share/fonts/opentype/noto/NotoSansCJKtc-Regular.otf"),
+]
+PDF_FONT_FAMILY = "report_font"
 
 logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
 
 
 class ReportPDF(FPDF):
     def header(self) -> None:
-        self.set_font("msjh", "B", 10)
+        self.set_font(PDF_FONT_FAMILY, "B", 10)
         self.set_text_color(30, 65, 80)
         self.cell(0, 8, "多智能體投資分析系統", align="R", new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
 
     def footer(self) -> None:
         self.set_y(-15)
-        self.set_font("msjh", "", 8)
+        self.set_font(PDF_FONT_FAMILY, "", 8)
         self.set_text_color(120, 120, 120)
         self.cell(0, 10, f"第 {self.page_no()} 頁", align="C")
 
@@ -50,16 +56,16 @@ def clean_text(value: Any, default: str = "尚無資料") -> str:
 def add_section_title(pdf: FPDF, title: str) -> None:
     pdf.set_fill_color(225, 245, 238)
     pdf.set_text_color(8, 80, 65)
-    pdf.set_font("msjh", "B", 15)
+    pdf.set_font(PDF_FONT_FAMILY, "B", 15)
     pdf.multi_cell(0, 10, title[:42], fill=True, new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
 
 
 def add_key_value(pdf: FPDF, label: str, value: Any) -> None:
-    pdf.set_font("msjh", "B", 10)
+    pdf.set_font(PDF_FONT_FAMILY, "B", 10)
     pdf.set_text_color(18, 47, 64)
     pdf.cell(0, 7, label, new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("msjh", "", 10)
+    pdf.set_font(PDF_FONT_FAMILY, "", 10)
     pdf.multi_cell(0, 7, clean_text(value), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(1)
 
@@ -78,16 +84,16 @@ def macro_summary(macro_df: pd.DataFrame, limit: int = 8) -> list[tuple[str, str
 def add_macro_table(pdf: FPDF, macro_df: pd.DataFrame) -> None:
     rows = macro_summary(macro_df)
     if not rows:
-        pdf.set_font("msjh", "", 10)
+        pdf.set_font(PDF_FONT_FAMILY, "", 10)
         pdf.multi_cell(0, 8, "macro_data 目前沒有可整理的資料。")
         return
 
-    pdf.set_font("msjh", "B", 9)
+    pdf.set_font(PDF_FONT_FAMILY, "B", 9)
     pdf.set_fill_color(181, 212, 244)
     pdf.cell(68, 8, "指標", border=1, fill=True)
     pdf.cell(42, 8, "日期", border=1, fill=True)
     pdf.cell(50, 8, "最新值", border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("msjh", "", 9)
+    pdf.set_font(PDF_FONT_FAMILY, "", 9)
     for indicator, date, value in rows:
         pdf.cell(68, 8, indicator, border=1)
         pdf.cell(42, 8, date, border=1)
@@ -106,6 +112,21 @@ def add_chart_pages(pdf: FPDF, chart_paths: list[str]) -> None:
         pdf.image(str(chart), x=12, y=38, w=185)
 
 
+def resolve_font_path() -> Path:
+    for path in FONT_CANDIDATES:
+        if path.exists():
+            return path
+    raise FileNotFoundError(
+        "找不到可用中文字型，請確認 assets/fonts/NotoSansCJKtc-Regular.otf 存在。"
+    )
+
+
+def register_pdf_fonts(pdf: FPDF) -> None:
+    font_path = resolve_font_path()
+    pdf.add_font(PDF_FONT_FAMILY, "", str(font_path))
+    pdf.add_font(PDF_FONT_FAMILY, "B", str(font_path))
+
+
 def build_pdf_report(
     stock_code: str,
     macro_df: pd.DataFrame,
@@ -120,14 +141,13 @@ def build_pdf_report(
 
     pdf = ReportPDF()
     pdf.set_auto_page_break(auto=True, margin=16)
-    pdf.add_font("msjh", "", str(FONT_PATH))
-    pdf.add_font("msjh", "B", str(FONT_BOLD_PATH))
+    register_pdf_fonts(pdf)
 
     pdf.add_page()
     pdf.set_text_color(18, 47, 64)
-    pdf.set_font("msjh", "B", 22)
+    pdf.set_font(PDF_FONT_FAMILY, "B", 22)
     pdf.cell(0, 14, f"{fundamental_data.get('company', stock_code)} 投資分析報告", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("msjh", "", 11)
+    pdf.set_font(PDF_FONT_FAMILY, "", 11)
     pdf.set_text_color(100, 119, 128)
     pdf.multi_cell(0, 8, f"股票代號：{stock_code}｜資料來源：{fundamental_data.get('data_source', 'unknown')}")
     pdf.ln(5)
