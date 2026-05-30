@@ -446,6 +446,10 @@ def build_report_if_available(
 ) -> str | None:
     """Generate PDF report when report_builder.py is available."""
 
+    if os.getenv("RENDER") and os.getenv("ENABLE_PDF_ON_RENDER") != "1":
+        print("略過 PDF 產生：Render 免費環境預設關閉 PDF，以避免記憶體不足。")
+        return None
+
     try:
         from report_builder import build_pdf_report
     except Exception as exc:
