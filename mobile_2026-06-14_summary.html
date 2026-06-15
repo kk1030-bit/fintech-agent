@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6/14 專題討論手機版摘要</title>
+  <style>
+    :root {
+      --ink: #10232a;
+      --muted: #60727a;
+      --line: #d9e4e1;
+      --soft: #f2f7f5;
+      --panel: #ffffff;
+      --blue: #155b7d;
+      --green: #0f7b63;
+      --gold: #9a661c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #f7faf9;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      width: min(100%, 760px);
+      margin: 0 auto;
+      padding: 18px 14px 36px;
+    }
+
+    header {
+      padding: 18px 0 12px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.28;
+    }
+
+    .date {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 12px 0;
+      box-shadow: 0 8px 20px rgba(29, 55, 60, .06);
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 0 20px; padding: 0; }
+    li { margin: 4px 0; }
+
+    .note {
+      background: var(--soft);
+      border-left: 4px solid var(--green);
+      padding: 9px 10px;
+      border-radius: 7px;
+      margin: 10px 0;
+      font-weight: 700;
+    }
+
+    .warn {
+      border-left-color: var(--gold);
+    }
+
+    code, pre {
+      font-family: Consolas, "Courier New", monospace;
+      background: #edf3f1;
+      border-radius: 6px;
+    }
+
+    code { padding: 1px 5px; }
+
+    pre {
+      overflow-x: auto;
+      padding: 10px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #e7f3ef;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .footer {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 18px;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>6/14 專題討論手機版摘要</h1>
+    <div class="date">多智能體投資分析系統：網站深化、Render 2GB、PDF 與 Agent 定位</div>
+  </header>
+
+  <section>
+    <h2>目前完成度</h2>
+    <p>目前核心系統可說已完成約 <strong>80% 至 85%</strong>，但建議不要說「下學期已完成 8 成」。比較穩的說法是：</p>
+    <div class="note">目前核心系統已完成 8 成以上；下學期重點是網站功能深化、Agent 流程化、PDF 網站展示、回測驗證與論文定稿。</div>
+  </section>
+
+  <section>
+    <h2>下學期主軸</h2>
+    <p>下學期不再從資料抓取或基礎網站開始，而是把網站升級成投資決策輔助平台。</p>
+    <ul>
+      <li>產業關聯圖 / 公司網絡圖</li>
+      <li>同業比較與估值比較</li>
+      <li>Agent 分析流程狀態</li>
+      <li>PDF 報告網站展示</li>
+      <li>回測驗證</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Render 與記憶體</h2>
+    <p><code>.io</code>、<code>.ai</code> 域名不能增加記憶體，只是網址門牌。真正要解決記憶體，要升級主機或調整架構。</p>
+    <pre>Render Free      512 MB
+Render Starter   512 MB
+Render Standard  2 GB</pre>
+    <div class="note warn">Starter 仍是 512MB；如果要增加 RAM，應看 Web Services 的 Standard 2GB。</div>
+  </section>
+
+  <section>
+    <h2>下學期改成 Render 2GB</h2>
+    <p>下學期計畫可改成使用 <strong>Render Standard 2GB</strong>，用來改善多股票查詢、PDF 展示、產業關聯圖與 Agent 分析流程穩定性。</p>
+    <pre>下學期基礎建設將升級 Render 部署規格，
+由 Free 512MB 提升至 Standard 2GB，
+以改善公開網站在多股票查詢、圖表產生與 PDF 報告展示上的穩定性。</pre>
+  </section>
+
+  <section>
+    <h2>為什麼目前網站會慢</h2>
+    <p>不是網站內容太多，而是每點一支股票都會觸發完整後端流程。</p>
+    <pre>點股票
+→ FinMind 抓資料
+→ 財務分析
+→ 寫入 Supabase
+→ DCF 計算
+→ matplotlib 產生圖表
+→ 回傳前端</pre>
+    <p>連點 4、5 支股票時，Render Free 會同時處理多個重任務，所以容易慢或錯誤。</p>
+  </section>
+
+  <section>
+    <h2>PDF 要放網站上</h2>
+    <p>PDF 不應只留在本機。比較合理的方式是：</p>
+    <pre>本機或背景流程先產生 PDF
+→ 上傳到 Supabase Storage 或靜態檔案空間
+→ 網站顯示 PDF 開啟連結</pre>
+    <p>這樣網站能展示 PDF，但不需要每次查詢都在 Render 即時產生 PDF。</p>
+  </section>
+
+  <section>
+    <h2>Agent 仍是亮點</h2>
+    <p>不能把網站改成單純查資料。正確定位是：</p>
+    <div class="note">Agent 是分析引擎，網站是展示入口。</div>
+    <ul>
+      <li>Agent 負責資料抓取、財務分析、DCF、圖表與報告產出。</li>
+      <li>網站快速展示 Agent 產出的分析結果。</li>
+      <li>重任務用快取或背景流程處理。</li>
+      <li>需要時才按「重新執行 Agent 分析」。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>最終建議架構</h2>
+    <pre>Render Standard 2GB：
+網站、API、PDF 連結、Agent 狀態展示
+
+Supabase：
+股票分析結果、PDF URL、產業關聯資料、回測結果
+
+本機 / 背景流程：
+抓資料、跑 Agent、產 PDF、更新快取
+
+前端：
+產業關聯圖、同業比較、互動式視覺化</pre>
+  </section>
+
+  <section>
+    <h2>可放進下學期計畫的說法</h2>
+    <pre>下學期以網站功能深化為主軸，
+將既有互動式股票分析網站升級為可展示 Agent 分析成果的投資決策輔助平台。
+系統將升級 Render Standard 2GB，
+並導入分析結果快取、PDF 網站展示、產業關聯圖、同業比較與回測驗證。</pre>
+    <p>
+      <span class="tag">Render 2GB</span>
+      <span class="tag">Agent 亮點</span>
+      <span class="tag">PDF 網站展示</span>
+      <span class="tag">快取架構</span>
+      <span class="tag">產業關聯圖</span>
+    </p>
+  </section>
+
+  <div class="footer">本頁為手機閱讀版摘要；完整版可參考 conversation_2026-06-14_summary.html。</div>
+</main>
+</body>
+</html>
