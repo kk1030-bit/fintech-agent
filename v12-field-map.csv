@@ -1,0 +1,12 @@
+field_name,data_type,currency,unit,period_type,missing_handling,risk_level
+revenue,float,TWD,100m,single_quarter/ytd/annual,null,high
+net_income,float,TWD,100m,single_quarter/ytd/annual,null,high
+free_cash_flow,float,TWD,100m,single_quarter/annual,null (不假0),high
+operating_cash_flow,float,TWD,100m,single_quarter/annual,null,medium
+capital_expenditure,float,TWD,100m,single_quarter/annual,null,medium
+shares_outstanding,float,Shares,1m,instant,null,high
+net_debt,float,TWD,100m,instant,null,high
+pe_ratio,float,None,x,instant,非正分母為 null,medium
+pb_ratio,float,None,x,instant,非正分母為 null,medium
+wacc,float,None,%,instant,不可假0 (DCF關鍵),high
+terminal_growth,float,None,%,instant,不可假0 (DCF關鍵),high

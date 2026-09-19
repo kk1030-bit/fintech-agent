@@ -1,0 +1,5 @@
+source_id,source_type,entity,endpoint_or_url,latency_rule,statement_basis
+finmind_fs,financial,2330/2317/2454/2379/3034,TaiwanStockFinancialStatements,captured_at (無官方發布日),single_quarter/ytd/annual
+finmind_price,market,2330/2317/2454/2379/3034,TaiwanStockPrice,T+0 (盤後),instant
+fred_macro,macro,US_Economy,fred.stlouisfed.org,依官方 release schedule,instant
+supabase_db,storage,analysis_results,fundamental_data,instant,NA

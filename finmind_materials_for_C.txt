@@ -1,0 +1,6 @@
+FinMind 損益表 (Income Statement)：為 ytd (累計)。若要取 single_quarter，Q2/Q3/Q4 需以前一期數據相減。
+FinMind 資產負債表 (Balance Sheet)：為 instant (存量時點)。存量絕對不可相加。
+FinMind 現金流量表 (Cash Flow)：為 ytd (累計)。free_cash_flow 需確認 CapEx 符號 (目前系統中計算為 CFO + CapEx)，缺值不可補 0。   
+TTM (Trailing Twelve Months)：必須湊齊連續四個 single_quarter 才能計算，缺一季即為 null。
+同業比較規則 (Peer Comparison)：2454 (聯發科) 同業為 2379, 3034；2330 (台積電) 僅作「產業參照」，不可納入同業平均計算。
+2D 圖表限制：圖表不猜測供應鏈關聯，上限 20 點 30 線，必須來自已核准之 JSON 快照，點擊時在手機列表或面板展示來源。
