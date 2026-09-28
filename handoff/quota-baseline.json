@@ -10,10 +10,10 @@
     "tpm": 100000,
     "rpd": 20,
     "other_daily_reserved": 0,
-    "source": "AI Studio Rate limits",
+    "source": "AI Studio Rate limits（Peak usage trends），截圖：2026秋季成果/W01/組長/下午4.29 2026-9-28的影像.png",
     "checked_at": "2026-09-28T15:50+08:00",
     "how_to_fill": "組長登入 Google AI Studio → 該 project 的 Rate limits 頁，記下選定 model 的 RPM/TPM/RPD 與截圖日期；限額按 project 計，不按 API key。",
-    "api_key_present_on_this_mac": false,
+    "api_key_present_on_this_mac": true,
     "desensitised_live_test": "not_run (no GEMINI_API_KEY in .env on this Mac)"
   },
   "daily_research_jobs_J": {
