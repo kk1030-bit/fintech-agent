@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>02｜雙Agent、資料契約與低成本運行</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1200px;margin:32px auto;padding:0 20px;color:#202829}h1{font-size:28px}h2{font-size:22px}a{color:#087f78}table{border-collapse:collapse;display:block;overflow:auto;font-size:14px}td,th{border:1px solid #cad3d2;padding:8px;text-align:left}th{background:#edf4f3}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f4;padding:16px}p,code{overflow-wrap:anywhere}</style></head><body><h1>02｜雙Agent、資料契約與低成本運行</h1><p><a href="00_%E5%B0%88%E9%A1%8C%E5%9F%B7%E8%A1%8C%E7%B8%BD%E5%85%A5%E5%8F%A3.html">返回專題總入口</a></p>
+<h2>既有架構與新增層</h2>
+<p>保留 Python/Flask 網站與既有資料/估值/報告模組，新增 Python LangGraph StateGraph 與 Gemini 官方 SDK。LangGraph 負責状态、條件分支與恢復；模型根據工具回傳決定下一步，才是本專題要驗證的 Agent 行為。</p>
+<pre><code class="language-mermaid">flowchart TD
+  U[Flask授權研究入口] --&gt; Q[Supabase持久任務與配額保留]
+  Q --&gt; G[LangGraph Researcher]
+  G --&gt; T[六個唯讀與確定性工具]
+  T --&gt; G
+  G --&gt; V[Reviewer自主核對]
+  V --&gt;|補查且有預算| G
+  V --&gt;|通過| H[新增人工核准閘門]
+  G --&gt;|不足或超限| S[保存狀態與停止原因]
+  V --&gt;|不足或拒絕| S
+  H --&gt; J[不可變核准report.json]
+  J --&gt; P[fpdf2與Supabase Storage]
+  P --&gt;|成功且hash核對| PUB[published]
+  P --&gt;|失敗| F[pdf_failed 管理員重試]
+  PUB --&gt; W[Flask網站與PDF唯讀]
+</code></pre>
+<p>現有 /api/analyze 同步抓取資料並產圖。本期新增非同步研究入口；公開唯讀改讀已核准快取，不能因重新整理或切股票再執行研究。既有同步入口須納入相同授權/配額政策，不可留下繞過新佇列的耗資源路徑。保留相容性由組長和 A 確認，不默默刪除既有功能。</p>
+<h2>明確新增，不宣稱已存在</h2>
+<p>新增 research_jobs、job_events、evidence_versions、report_versions 等儲存契約與遷移，實際表名前綴由組長一次鎖定。現有 macro_data、fundamental_data 保留，不破壞正式資料。新增後端授權、人工核准、報告歷史和 Storage PDF 保存；目前程式沒有完整同版本發佈機制。</p>
+<p>Web 接受任務後立即回 job_id；持續 Python worker 由啟動監督程式與 gunicorn 在同一個預定2GB instance 管理。不是 Flask request 返回後隨意開 thread。Web/worker 之一異常退出時終止服務交平台重啟。一次只允許一個活躍 job；DB 租約60秒、心跳20秒、輪詢2秒，並以 fencing/狀態版本避免舊 worker 覆寫新結果。研究和產 PDF 共用重工作限制，不另購付費 worker。</p>
+<p>同一 idempotency_key 重送回既有 job；可重用結果鍵包含 ticker、question_version、snapshot_id、model_id、prompt_version。金鑰只在後端 env，資料表/RLS/Storage 權限需測試。LangGraph 記憶體狀態不是持久化完成，檢查點和預算都須保存到 Supabase。重啟保留累計請求，不聲稱外部 API 計費 exactly-once。</p>
+<h2>六工具契約</h2>
+<p>以下是新增適配層，實作先重用既有模組，不要求現在已有同名函式。所有工具只接受 schema 欄位，不接受 SQL、shell、任意 URL 或路徑。</p>
+<ol>
+<li>search_evidence(ticker, query, cutoff, limit)：查詢已入庫公開財報/公告/總經來源索引，limit 1至5，回來源ID、標題、發布與可得時間、摘要。新增索引不是已有新聞爬蟲。</li>
+<li>read_evidence(evidence_version_id)：取該 job 快照內不可變片段，最多1,200中文字，附段落、hash、精確原始來源連結。找不到就 no_data，不改抓任意網站。</li>
+<li>get_financial_snapshot(ticker, cutoff)：適配 report_downloader.py 的 FinMind 資料，回營收、淨利、TTM EPS、FCF、股數、淨負債等可用值。各值帶期間、合併口徑、幣別、單位、來源與可得時間；缺值為 null，不自行补齊預測。</li>
+<li>get_macro_snapshot(cutoff, series_ids)：讀 macro_data/FRED/台股市場的核准快照；series 白名單由 W02 鎖定為 CPI、政策利率、台股市場指標。區分資料觀察期與發布/修訂時間；拿不到歷史 vintage 就不能稱當時已知。</li>
+<li>get_price_window(ticker, end_at, sessions)：沿用 FinMind 行情適配，sessions 1、5、20，台股交易日；研究只讀 cutoff 前可得資料。明示原始/調整口徑，停牌或缺價為 no_data。</li>
+<li>calculate_metrics(operation, values, evidence_refs)：只接受 growth_rate、simple_return、pe_ttm、dcf_scenario、peer_comparison。peer_comparison仍在calculate_metrics內，不新增第七工具；季度/TTM、比較角色和指標遵循第03章。PE=同幣別同每股口徑股價/正TTM EPS；EPS&lt;=0或資料不足回null+原因。DCF重用 valuation_agent/dcf_model.py，輸入至少包含 FCF 期間及單位、WACC、g、淨負債、股數；WACC&gt;g、股數&gt;0、單位相容才算。假設及敏感度單獨標示，不把內在價值當成交價。</li>
+</ol>
+<p>Researcher 可選全部六工具。Reviewer 只能 read_evidence、get_financial_snapshot、get_macro_snapshot、calculate_metrics；需要新搜尋或股價視窗時，以具體 claim_id/required_evidence 退給 Researcher，不能隱性越權。</p>
+<h2>既有金融邏輯必查項</h2>
+<p>main.py 的部分缺值替代可能把營收/淨利比當PE、營收/營業利益比當PB；股價資料缺少時也有非股價序列替代。這些不能直接當真實市價比率。W03 B/D 需加明確測試與缺值狀態：PE/PB要有正確定義及來源，沒有就顯示不可用，不用看似合理數字補洞。</p>
+<p>DCF已存在，但預設 WACC=9%、g=3%、FCF延伸、淨負債缺值與股數單位不代表適用每家公司。B用可手算的fixtures查核；D覆核結果。缺失資料不能只靠LLM猜。與本期主題無關的金融模型擴充不做。</p>
+<h2>資料契約 V1.2</h2>
+<pre><code class="language-json">{
+  &quot;job&quot;: {
+    &quot;job_id&quot;: &quot;uuid&quot;, &quot;ticker&quot;: &quot;2330&quot;, &quot;market&quot;: &quot;TW&quot;, &quot;currency&quot;: &quot;TWD&quot;,
+    &quot;question_version&quot;: &quot;macro-fundamental-valuation-v1&quot;,
+    &quot;cutoff_at&quot;: &quot;ISO-8601 UTC&quot;, &quot;source_snapshot_id&quot;: &quot;immutable-id&quot;,
+    &quot;mode&quot;: &quot;workflow|single|dual&quot;,
+    &quot;status&quot;: &quot;queued|running|paused_quota|succeeded|insufficient_evidence|timed_out|failed|cancelled&quot;,
+    &quot;stage&quot;: &quot;research|tools|review|revision|finished&quot;,
+    &quot;model_id&quot;: &quot;actual-configured-id&quot;, &quot;prompt_version&quot;: &quot;v1.2&quot;,
+    &quot;calls_used&quot;: 0, &quot;tokens_observed&quot;: 0, &quot;supplement_rounds&quot;: 0,
+    &quot;stop_reason&quot;: null, &quot;checkpoint_version&quot;: 1
+  },
+  &quot;evidence&quot;: {
+    &quot;evidence_version_id&quot;: &quot;immutable-id&quot;, &quot;source_url&quot;: &quot;verified-public-url&quot;,
+    &quot;source_type&quot;: &quot;financial|macro|price|official_document&quot;,
+    &quot;published_at&quot;: null, &quot;captured_at&quot;: &quot;ISO-8601 UTC&quot;, &quot;available_at&quot;: &quot;known-at-time&quot;,
+    &quot;period&quot;: null, &quot;currency&quot;: null, &quot;unit&quot;: null, &quot;content_hash&quot;: &quot;sha256&quot;,
+    &quot;synthetic_fixture&quot;: false
+  },
+  &quot;claim&quot;: {&quot;claim_id&quot;: &quot;c1&quot;, &quot;kind&quot;: &quot;fact|inference|unknown&quot;, &quot;text&quot;: &quot;statement&quot;, &quot;evidence_refs&quot;: [&quot;immutable-id&quot;], &quot;limitations&quot;: []},
+  &quot;review&quot;: {&quot;decision&quot;: &quot;pass|revise|insufficient&quot;, &quot;issues&quot;: [{&quot;claim_id&quot;: &quot;c1&quot;, &quot;severity&quot;: &quot;critical|minor&quot;, &quot;reason&quot;: &quot;brief reason&quot;, &quot;required_evidence&quot;: &quot;specific missing fact&quot;}]},
+  &quot;publication&quot;: {&quot;status&quot;: &quot;draft|approved|pdf_failed|published&quot;, &quot;report_version_id&quot;: &quot;immutable-id&quot;, &quot;report_hash&quot;: &quot;sha256&quot;, &quot;pdf_hash&quot;: &quot;sha256&quot;, &quot;storage_key&quot;: &quot;versioned-key&quot;}
+}
+</code></pre>
+<p>來源ID必須屬於該快照；null不等於0；財報期與公告時間分開。未知發布時間以擷取時間判可得性，不回填更早時間。FRED新修訂值、FinMind當前更新資料不能冒充歷史當時可得。來源原文內的指令、金鑰要求一律是資料，不是系統指令。</p>
+<h2>記錄與停止</h2>
+<p>每個動作保存 job_id、event_seq、時間、角色、工具名、脫敏參數、輸入/輸出hash、引用ID、結果摘要、延遲、模型版本、prompt hash、usageMetadata。decision_summary僅簡短可驗證理由，不要求或顯示隱藏思考鏈。模型沒有資料庫、發佈或交易權限；上層驗證後保存。</p>
+<h2>預算 V1：以下數值是本專題設計上限，不是 Google 免費方案承諾</h2>
+<ul>
+<li>同時執行 1 job；每 job 最多 8 次模型 HTTP 發送，Researcher、Reviewer、格式重試、網路重試全部共用；禁止 SDK 隱藏自動重試。</li>
+<li>每 job 最多 10 次工具調用、同一工具相同參數最多 2 次、補查最多 2 輪。工具不必每種都用，工具數不等於模型請求數。</li>
+<li>每 job 主動執行時間最多 180 秒，不含排隊和 paused_quota 等待；超時保存檢查點並標 timed_out，不冒充成功。</li>
+<li>每次模型輸入壓到 3,000 token 以內，文字輸出上限 1,500；啟用 thinking 時必須有可配置上限並納入預留。全 job token 准入預算 40,000，先保留再發送，按供應商 total usage 對帳；無法可靠預估的模型不得使用。不能只靠字數當精確 token。</li>
+<li>前 4 次請求可供初次研究，第 5 次優先保留覆核；第 6 至 8 次只供必要修正或覆核。不是強制固定五步：Researcher 可提早提出草稿；若覆核需工具回傳而剩餘不足，就停止，不能跳過覆核發佈。</li>
+<li>每日研究上限 J = min(6, floor(max(0, floor(0.8 * 實際RPD) - 同日其他用途保留次數) / 8))。W01 依真實帳戶設定，不能假設 J 一定大於 0；J=0 時只開快取展示與 mock 測試，組長處理額度問題，不切換付費。</li>
+<li>RPM、TPM 用全專案排程器共同控制，預留 20% 餘裕；子模組摘要或其他用途若使用 Gemini，也要納入同一本帳。request_count 在送出前遞增，逾時或 429 不退回次數；token未知需保留估算，避免少算。</li>
+<li>短期限流遵守 Retry-After，再加抖動，最多 1 次重試且共用 8 次上限；日額耗盡或原因不明保存 paused_quota，不狂重試。恢复同一 job 的累計預算不歸零。</li>
+</ul>
+<p>Gemini 的實際 RPM/TPM/RPD 隨模型及專案而異，按專案而非 API key 計算；應查看 AI Studio，不以學生訂閱推定 API 容量。<a href="https://ai.google.dev/gemini-api/docs/rate-limits">官方限額</a>。Google AI Pro 可能附帶需確認資格與啟用情況的開發者福利，未核對之前不計入可用額度。<a href="https://developers.google.com/program/plans-and-pricing">開發者方案</a>。免費服務的資料使用政策依官方定價與條款確認，只使用公開研究素材，不上傳私人財務資訊。<a href="https://ai.google.dev/gemini-api/docs/pricing">API 定價</a>。</p>
+<h2>網站與持久線上 PDF</h2>
+<p>研究工作台包含三檔選擇、cutoff、授權執行、job狀態、預算、來源和工具軌跡、覆核問題、核准報告與PDF。新報告包括3至5項主張、總經/基本面/估值觀察、DCF假設與限制、反向證據、未知、下一確認訊號及來源。無足夠資料時標不足，不虛構買賣評級或未校準上漲機率。</p>
+<p>沿用 report_builder.py 的 fpdf2 與 chart_builder.py 的 matplotlib。研究核准後以同一 report.json 產頁面/PDF，不再呼叫LLM重寫。新增人工核准、report版本與hash鎖定，PDF物件以版本key寫到 Supabase Storage，DB只保存metadata。未核准版本不得由公開端點下載；公開程度由組長依來源授權決定，不把service key放前端。</p>
+<p>目前 /output 只是本機檔案路由；Render下 main.py 預設跳過PDF。W07需實作線上產製及保存流程，W08在測試後才設定 ENABLE_PDF_ON_RENDER=1 或等效新worker設定。光開環境變數不等於完成持久儲存。</p>
+<p>PDF每份&lt;=5MB、&lt;=10頁，中文字可嵌入、來源可點、關鍵風險不可截斷。100份最壞约500MB另加快照與圖，W01/W08查 Storage/DB 配額、流量、備份和生命週期；到80%停止新增並通知，不自動刪正式資料。Render本機output只作暫存，重啟後仍能讀既有報告才算驗收。</p>
+<p>2GB不是API額度。先去重資料抓取、限一次重工作、串行產圖/PDF、量RSS及延遲，再決定資源。chart_builder.py 已有 close(fig)，不得未量測就斷言沒有關圖是慢的原因。總經更新與FinMind資料預取採受控批次及TTL；過期快取明示時間，不冒充即時。</p>
+<p><a href="https://docs.langchain.com/oss/python/langgraph/overview">LangGraph官方架構</a>、<a href="https://ai.google.dev/gemini-api/docs/function-calling">Gemini工具呼叫</a>、<a href="https://render.com/pricing#compute">Render規格入口</a>為實作查核入口；版本與實際額度由組長鎖定。</p>
+<h2>季度資料與發布閘門</h2>
+<p>get_financial_snapshot保留原始single_quarter/ytd/annual/instant及TTM/年度相容層。季度欄位、同業比較、收藏與2D來源契約詳見第03章。網站與PDF使用同一份核准JSON；先完成版本化Storage寫入及hash核對才設published，失敗設pdf_failed並僅供管理者重試，公開端點不可暴露未發布版本。</p>
+</body></html>

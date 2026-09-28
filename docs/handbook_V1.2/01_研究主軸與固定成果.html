@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>01｜研究主軸、現況與固定成果</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1200px;margin:32px auto;padding:0 20px;color:#202829}h1{font-size:28px}h2{font-size:22px}a{color:#087f78}table{border-collapse:collapse;display:block;overflow:auto;font-size:14px}td,th{border:1px solid #cad3d2;padding:8px;text-align:left}th{background:#edf4f3}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f4;padding:16px}p,code{overflow-wrap:anywhere}</style></head><body><h1>01｜研究主軸、現況與固定成果</h1><p><a href="00_%E5%B0%88%E9%A1%8C%E5%9F%B7%E8%A1%8C%E7%B8%BD%E5%85%A5%E5%8F%A3.html">返回專題總入口</a></p>
+<h2>專案識別</h2>
+<p>唯一正式專題是「多智能體投資分析系統」，GitHub：<a href="https://github.com/kk1030-bit/fintech-agent">https://github.com/kk1030-bit/fintech-agent</a>，本機工作副本 <code>E:\專題\fintech-agent</code>。本手冊是唯一執行規格，不需參照任何歷史版本。</p>
+<p>期限及分工不變：2026/09/14 起跑、12/11 內部定稿、12/18 交付；六人三組，C/E 只做文書。所有本機文件及程式儲存在 E:\專題。本手冊只定義執行計畫，沒有修改正式程式、部署或消耗 Gemini API。</p>
+<h2>一句話主軸</h2>
+<p>沿用現有台股總經、財報、DCF 估值與網頁報告，新增能依證據自主選工具、接受覆核、有限補查與停止的雙 Agent，並在網站呈現可追溯、可下载的同版本 PDF。</p>
+<h2>組長可直接念的介紹</h2>
+<p>我們的專題原本就是 Python 投資分析系統：總經部門整理 FRED 與台股市場資料，財報部門取得公司財務資料，估值部門計算 DCF，網站顯示結果與圖表。這些是實際存在的程式基礎，但有程式不等於金融口徑已驗證，也不等於已有自主 Agent。</p>
+<p>這學期不換網站框架。Researcher 要能根據缺少的證據決定先查財報、總經或股價；Reviewer 要能獨立檢查來源、財報期間、PE 和 DCF 假設，發現問題就要求補查。若仍然缺資料，系統要明確說不足，不能為了給出買賣評級而編數字。LangGraph 管理狀態與邊界，真正的自主性要用模型選擇工具與不同執行路徑證明。</p>
+<p>研究完成後仍需人工核准；網站和 PDF 使用同一份核准資料。公開訪客閱讀既有成果不呼叫模型。執行過程保存工具動作、來源版本、簡短決策理由、呼叫與 token 用量，不展示隱藏思考鏈。最後以固定流程、單 Agent、雙 Agent 的受控比較評估品質與成本，不預設雙 Agent 一定比較好。</p>
+<p>組長/A 做執行器及網站，B/C 做資料及研究文稿，D/E 做覆核及成果呈現。C/E 的技術素材由技術組核准後提供，不要求他們寫程式、執行測試或自行判斷財務正確性。</p>
+<h2>已核對的程式基線，不是線上驗收結果</h2>
+<p>2026/09/13 讀取本機原始碼並核對遠端 HEAD：<code>53816d4fb7d178d309cb556bd55fe9f49533e7e5</code>。本機 HEAD 與遠端當時一致。未連線執行 FinMind/FRED/Supabase/Gemini，也未登入 Render 後台測試；實際服務、資料完整度與帳戶額度由 W01 查核。</p>
+<table fit-page-width="true" header-row="true">
+<tr><td>項目</td><td>原始碼證據</td><td>正確現況</td></tr>
+<tr><td>網站</td><td>web_app.py、templates/dashboard.html</td><td>Flask；/api/stocks、/api/analyze、/output；分析目前同步執行</td></tr>
+<tr><td>財報</td><td>report_downloader.py、financial_analyzer.py</td><td>FinMind 財報/現金流/資產負債、規則式分析；不保證所有股票與欄位完整</td></tr>
+<tr><td>總經</td><td>macro_agent/run_macro.py、fred_scraper.py</td><td>FRED 與台股市場資料取得、寫入 Supabase；網站讀既有 macro_data</td></tr>
+<tr><td>估值與圖表</td><td>main.py、valuation_agent/dcf_model.py、chart_builder.py</td><td>DCF、股價/PE-PB/估值圖表已存在；財務定義、缺值和單位仍需測試</td></tr>
+<tr><td>PDF</td><td>report_builder.py、main.py</td><td>fpdf2 本機產檔及 Flask output 路由已存在；Render 下未開 ENABLE_PDF_ON_RENDER=1 時跳過生成，不是已完成持久線上報告</td></tr>
+<tr><td>Gemini</td><td>根目錄 gemini_analyzer.py；fundamental_agent/gemini_analyzer.py</td><td>根目錄是規則分析相容包裝；子目錄有單次 Gemini 摘要呼叫，但不是目前 Flask 主流程的自主 Agent</td></tr>
+<tr><td>依賴與部署</td><td>requirements.txt、render.yaml</td><td>Python/Flask/gunicorn/Supabase/FinMind/FRED/matplotlib/fpdf2；根依賴未列 google-genai 或 langgraph；yaml 仍 plan:free、1 worker、120秒 timeout</td></tr>
+</table>
+<p>程式存在不能推出「下學期完成八成」。本期新增功能初始均為未開始；既有基礎另列，完成度依第06章驗收證據計算。</p>
+<h2>本期固定範圍</h2>
+<ul>
+<li>示範基線為台股 2330、2317、2454，一次一檔；這是依既有系統訂定的三檔驗收範圍，不表示使用者已逐檔指定或保證資料完整。</li>
+<li>固定問題：「截至指定時間，總經、基本面與估值證據支持哪些觀察？有哪些反向證據、假設與待確認訊號？」報告區分事實、推論、未知。</li>
+<li>保留 Flask、FinMind、FRED、Supabase、既有 DCF/matplotlib/fpdf2。新增 Python LangGraph 與 Gemini 官方 SDK，不重寫網站。</li>
+<li>必做：雙角色自主工具閉環、持久job/來源/軌跡、預算與停止機制、人工核准、季度財報、同業比較、收藏儀表板、網站同版本PDF、三模式研究驗證。小型2D產業圖按第03章條件閘門執行。</li>
+<li>Render 2GB 是規劃規格，不是已購買；Gemini 以實際免費 API 額度為準，不以學生訂閱推定 API 無限。</li>
+<li>不做自動下單、個人化投資建議、獲利保證、全市場擴充、3D 關係網、模型微調、向量資料庫、六 Agent 辯論或任意網址爬取。</li>
+<li>既有 DCF 必須保留與核實；不把規則、數學計算器或固定爬資料流程宣稱成自主 Agent。</li>
+</ul>
+<h2>12/18 必交八項</h2>
+<ol>
+<li>可開啟的正式網站、三檔研究入口、季度資料、2454同業比較及收藏儀表板；唯讀已核准成果不觸發LLM。2D圖按第03章閘門判定，延後須明示。</li>
+<li>可實際運作的 Researcher/Reviewer 閉環，包含補查修正及不足證據停止。</li>
+<li>可追溯的來源、動作、模型/提示詞版本、預算與停止原因。</li>
+<li>網站可預覽、下載且與核准內容一致的三份研究 PDF。</li>
+<li>30 案、10 開發/20 保留，三模式執行及評分原始紀錄。</li>
+<li>正文20至25頁論文，可編輯檔及PDF。</li>
+<li>16張主投影片、4張備用頁、10分鐘講稿、3分鐘展示與備援錄影。</li>
+<li>程式版本、脫敏設定、測試、來源與成果交接包。</li>
+</ol>
+<p><a href="https://github.com/kk1030-bit/fintech-agent/tree/53816d4fb7d178d309cb556bd55fe9f49533e7e5">固定版本原始碼</a>是現況依據；本文件的新規格則是待實作任務，兩者不得混寫。</p>
+</body></html>

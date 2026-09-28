@@ -1,0 +1,100 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>04｜六項網站功能規格與驗收</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1200px;margin:32px auto;padding:0 20px;color:#202829}h1{font-size:28px}h2{font-size:22px}a{color:#087f78}table{border-collapse:collapse;display:block;overflow:auto;font-size:14px}td,th{border:1px solid #cad3d2;padding:8px;text-align:left}th{background:#edf4f3}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f4;padding:16px}p,code{overflow-wrap:anywhere}</style></head><body><h1>04｜六項網站功能規格與驗收</h1><p><a href="00_%E5%B0%88%E9%A1%8C%E5%9F%B7%E8%A1%8C%E7%B8%BD%E5%85%A5%E5%8F%A3.html">返回專題總入口</a></p>
+<h2>給組員的五分鐘介紹</h2>
+<p>我們的核心問題是：投資分析資料分散、不同期間的數字容易混用，而一般 AI 摘要難以核實。本期沿用既有 Python/Flask、FinMind、FRED、Supabase、DCF、matplotlib 和 fpdf2，讓 Researcher 依證據選擇工具，Reviewer 檢查來源與財務口徑，必要時退回補查，資料不足就停止或提出有明確限制的結果。</p>
+<p>新功能把這個研究流程變得可操作：季度財報提供正確的時間基礎，同業比較提供参照，儀表板保存已核准研究，線上 PDF 讓成果可以分享與查核，驗證結果回答系統表現如何。小型產業關聯圖提供有來源的產業背景。關聯圖、圖表和收藏本身不代表 Agent；展示中要看得到模型選工具、取得觀察、因矛盾改變下一步、接受覆核的紀錄。</p>
+<p>固定研究標的仍是 2330、2317、2454。2379、3034 僅作 2454 比較面板的受控參照資料，不增加正式研究案例數、前瞻樣本數或 Gemini 任務數。2330 出現在 2454 比較時標「產業參照」，不得直接納入同業平均。2379、3034 也要由 B 註明產品組合差異；不能只因半導體分類相同就宣稱完全可比。</p>
+<h2>六項想法的固定交付</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>功能與最小範圍</th>
+<th>主責／合作／驗收</th>
+<th>時間</th>
+<th>完成條件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F01</td>
+<td>FinMind 原始季資料、公告可得時間、季度／TTM／年度分層</td>
+<td>B／組長遷移、D覆核</td>
+<td>W01-W03；W04回歸</td>
+<td>三檔有來源樣本與缺值處理；保留年度 DCF 相容層</td>
+</tr>
+<tr>
+<td>F02</td>
+<td>2454 比較 2379、3034；2330 為產業參照；五類指標</td>
+<td>B計算、A畫面／D覆核</td>
+<td>W03契約；W04-W06完成</td>
+<td>同一報價基準日；財報期、缺值原因、DCF假設可查；不觸發額外LLM</td>
+</tr>
+<tr>
+<td>F03</td>
+<td>瀏覽器收藏、已發布報告、估值狀態、資料品質風險、更新時間</td>
+<td>A／組長報告API、B規則、D測試</td>
+<td>W02-W06</td>
+<td>重整保留收藏；只讀已核准報告；缺資料不顯示為低風險</td>
+</tr>
+<tr>
+<td>F04</td>
+<td>歷史 evidence-replay、既有9份前瞻觀察、數學回歸測試</td>
+<td>D／B來源、組長執行、C文稿</td>
+<td>W02-W13</td>
+<td>無前視資料混入；1/5/20交易日、NA原因、模型限制、實際結果可重現</td>
+</tr>
+<tr>
+<td>F05</td>
+<td>網站及同版本PDF，新增季度／比較／限制內容</td>
+<td>A／組長Storage、B資料、D一致性</td>
+<td>W06-W08</td>
+<td>網站預覽下載、手機可讀、重新部署仍可取得、純讀0次LLM</td>
+</tr>
+<tr>
+<td>F06</td>
+<td>小型2D產業關聯圖，最多20節點／30關係，僅核准來源</td>
+<td>A畫圖、B核實／C整理、E圖例、D檢查</td>
+<td>W01-W03資料規格；W07-W08製作</td>
+<td>分類顏色與線型、搜尋點選、來源面板、手機列表、無來源不畫線</td>
+</tr>
+</tbody>
+</table>
+<p>優先順序：F01 + Agent 主線 → F02/F03 → F05 → F04 持續驗證；F06 有排程但採條件式交付。W06 的 Agent 閉環、F01/F02 基礎回歸、來源凍結未過，組長於10/23登記 F06 延後，C/E仍完成已核實資料表與設計稿。若可開工，11/06須完成；逾期轉後續版本，不挪用正式實驗、PDF或12/11定稿時段。不得自行擴充3D、全市場或自動挖供應鏈。</p>
+<h2>F01｜FinMind 季資料契約</h2>
+<p>先讀 report_downloader.py、financial_analyzer.py、main.py、valuation_agent/dcf_model.py 與現行 Supabase schema。既有 downloader 會把季資料聚合成年資料；本任務保留原始季度及版本，再由相容層供應年度或 TTM 給既有 DCF。禁止只把欄位標籤由「年」改「季」。</p>
+<p>資料欄位固定含 stock_id、metric、period_start、period_end、fiscal_year、fiscal_quarter、period_basis（single_quarter/ytd/annual/instant）、value、unit、currency、statement_basis、source_url、source_dataset、source_version、published_at、captured_at、available_at、snapshot_id、content_hash、synthetic_fixture。未取得值為 null，附 missing_reason；財報結束日不等於公告日。公告時間不可驗證時以 captured_at 當可得時間，不倒填為較早日期。</p>
+<p>先以供應商文件與實際樣本核對各欄是單季或累計。若現金流為 YTD，Q2單季=Q2累計-Q1累計；Q3=Q3累計-Q2累計；Q4=全年-Q3累計，只能在同公司、同年度、同口徑且必要前期值齊全時算。若來源已單季則不再相減。資產負債是時點存量，不把四季相加。TTM 流量需四個連續季度；EPS需一致股本及來源口徑，無法校準即不可用。</p>
+<p>最少測試：單季源不二次相減、累計轉單季、缺Q1/Q3、重複公告版本、來源只有財報期沒有公告時間、合併/個體混用、單位換算、股數變動、季度排序、cutoff後資料排除。保存年度相容測試避免破壞既有 DCF。只先在獨立測試DB演練遷移與回滾，不清除原年資料。</p>
+<h2>F02｜比較規則與工具</h2>
+<p>維持六工具；在 calculate_metrics 內加入 operation=&quot;peer_comparison&quot;，get_financial_snapshot 可取得季度與TTM。下列名稱為待實作契約，AI必須先查 repo 是否存在，不能冒称已有端點。輸入：subject=2454、comparators=[2379,3034,2330]、price_as_of、cutoff、snapshot_ids、metrics、method_version。最多4公司，輸出逐列附比較類型、數值/NA原因、財報期、實際報價日、來源ID和公式版本。</p>
+<p>P/E=同基準日實際股價/可得且口徑一致的TTM EPS；EPS&lt;=0標不適用，不造負值評級。P/B=同基準日股價/可得每股帳面價值，分母&lt;=0標不適用。營收成長採單季YoY，同季度去年基期為0或缺值時NA。FCF採營業現金流減正值資本支出；資本支出若來源為負現金流出先依欄位定義正規化，禁止任意取絕對值掩蓋資料錯誤。DCF列每股價值、同日市價、差距、WACC、g、預測期、FCF基礎、淨負債、股數及敏感度；缺參數即NA，不能用固定零替代。</p>
+<p>數字範例只用 synthetic_fixture=true：股價120、TTM EPS6，P/E=20；BVPS30，P/B=4；營收120相對去年100，YoY=20%；營業現金流100、正值CapEx30，FCF=70。這是合成驗算資料，不是實際公司財報。</p>
+<p>同一報價基準日無價格就NA，不拿另一家公司不同日價格來補。cutoff前可得最新季可能各公司不同，必須明示；只有期間一致且比較類型合格者才可計同業統計。第一版不計「同業平均買賣評級」。參照股僅跑確定性資料工具，不額外建立Gemini job。</p>
+<h2>F03｜最小投資儀表板</h2>
+<p>收藏採 localStorage 保存股票代號，預設空白、最多5檔，不存API key或私人財務資訊。收藏限研究三檔及兩檔比較標的；比較標的只開比較資料，不開新研究。訪客無帳號跨裝置同步，不新增會員/投資組合系統。組員用手機操作的收藏留在該瀏覽器；清除瀏覽器資料會清空。</p>
+<p>已分析清單来自伺服器 published report metadata，顯示「已發布研究」，不冒稱是該訪客自己分析。欄位：代號、公司名、report_version_id、publication_status、資料截止、財報期間、published_at、資料來源更新時間、估值狀態、資料品質风险、PDF狀態。時間採Asia/Taipei並注明。按收藏過濾、按發布時間排序、開報告、開PDF；完整處理載入、空白、資料不足、過期、錯誤、暫停配額狀態。</p>
+<p>估值差距 d=(DCF每股值-同日市價)/同日市價。d&gt;=15%顯示「低於模型估值」，d&lt;=-15%為「高於模型估值」，其餘為「接近模型估值」；15%是專題顯示門檻而非經驗證投資規則，須顯示方法版本/敏感度，有關鍵參數缺值就「無法判定」。</p>
+<p>風險欄明確命名「資料品質風險」：關鍵資料缺失/未解決矛盾/無法證明可得時間→高；資料標示過期或僅次要欄缺失→中；所有既定資料檢查通過→低。低不代表股價風險低，投資風險另由核准報告文字呈現。新 job 與收藏、排序、開舊報告必須區分；只有經授權提交新研究才可執行分析，收藏與純讀不自動啟動 job。</p>
+<h2>F04｜研究驗證與歷史限制</h2>
+<p>沿用30案（10開發、20保留）、固定流程/單Agent/雙Agent三模式，保留測試共60run；正式輸入及工具可得資訊對齊。F01/F02/F03/F05/F06新增的確定性回歸不另增LLM樣本，亦不拿合成測試當正式品質成績。W06凍結案例、模型、prompt及工具版本；若後續資料/工具更動影响實驗，按第06章重跑受影響模式，獨立版本呈現。F06視覺功能不得插入已凍結的實驗輸入。</p>
+<p>歷史資料需要 available_at&lt;=cutoff；使用今天取得的修訂財報/FRED值若沒有當時版本，只能列 evidence-replay 限制，不能稱無前視回測。不得承諾能從供應商取得目前未知的公告日欄位。</p>
+<p>前瞻沿用2026/10/30、11/06、11/13各21:00，2330/2317/2454各一份，共9份。保留缺資料的研究，不能挑掉失敗樣本。下一實際交易日開盤為entry，當日為第1交易日，對第1/5/20交易日收盤算(price_exit-price_entry)/price_entry。進出場使用一致調整口徑，缺相配開盤或未滿窗為NA。12/11截取仍未成熟就NA。沒有方向訊號者不算方向命中；9份屬小樣本觀察，不證明預測能力。</p>
+<p>每個指標附分子、分母、NA數、樣本ID、版本、觀察窗口；數學正确不等於預測有效。C依D核准結論寫限制，E依D提供CSV製圖；C/E不判定模型準確率、不補造漂亮結果。</p>
+<h2>F05｜網站PDF與版本一致</h2>
+<p>正式網站必須能預覽及下載PDF，本機只是備份。沿用report_builder.py/fpdf2及chart_builder.py/matplotlib；同一份核准report.json產網站和PDF，不用LLM重新寫一遍。報告包含研究問題/cutoff、主張/反證、季度資料、同業比較（適用2454）、DCF與敏感度、資料品質風險、未知、來源、版本及方法限制。</p>
+<p>狀態：draft→人工核准→PDF/圖表寫入版本化Storage key並核對hash→published。render失敗則pdf_failed，可保留核准草稿供管理者重試；不得把缺失檔案連結公開。DB儲存metadata，Supabase Storage保存文件；Render output只暫存。已發布report_version_id不可覆寫，新內容另建版本。網站與PDF以相同JSON語义及數值核對，不要求跨環境PDF binary hash相同。</p>
+<p>手機預覽失敗仍有下載入口；未核准版本公開端點須拒絕。關掉Gemini後仍可讀既有研究/PDF且呼叫計數不增加。重啟/重新部署後同版本檔案可讀；簽名URL過期可依同版本metadata重新取得，不觸發LLM。上限沿用10頁、5MB，額外比較表不得裁掉來源與限制。</p>
+<h2>F06｜2D產業關聯圖</h2>
+<p>從三研究標的出發，最多20公司節點/30關係。節點欄位company_id、name、market、industry_tags、source_url；關係欄位source_company、target_company、relation_type、direction、source_url、published_at、captured_at、valid_as_of、excerpt、verification_status、reviewer。供應/客戶關係一定需明示來源，不從營收相關性或同分類推定。只核准關係進正式圖；沒有可用供應關係時顯示已核准的同產業分組，不硬湊連線數。</p>
+<p>C從B提供的年報/官方IR來源摘錄與登錄，B判定關係和有效時間，D抽查；E做圖例文字與圖說，A寫互動。分類顏色搭配文字；線型區分供應、客戶、競爭、同產業。點節點/線顯示來源、日期、關係說明；支持搜尋、重設、放大縮小及手機列表備援。沿用既有前端可用圖形庫，若無再由A評估輕量2D庫，鎖版本；不加Three.js或3D引擎。</p>
+<p>圖讀版本化JSON；瀏覽、拖曳、搜尋不調用Gemini或逐節點抓資料。Researcher如需產業事實仍從既有search_evidence/read_evidence讀核准來源，不能把圖上的連線當成無來源事實。正式比較實驗不以後加關係圖改動凍結案例。</p>
+<h2>六工具與系統Agent執行規則</h2>
+<p>Researcher 執行規則：你只可使用search_evidence/read_evidence/get_financial_snapshot/get_macro_snapshot/get_price_window/calculate_metrics。先依研究問題和缺口選擇工具，不必全部呼叫。2454涉及相對估值時可選calculate_metrics(operation=peer_comparison)，使用cutoff內snapshot；需要季度資料時讀get_financial_snapshot，不自己推估財報數字。工具不支援參數則回報契約缺失，不能捏造呼叫成功。識別single_quarter/ytd/annual/instant、TTM、報價基準、幣別和合併口徑；缺值保留。比較公司中的2330是產業參照。主張附來源ID；簡短decision_summary只說可驗證動作理由，不輸出隱藏思考鏈。Reviewer提出具體缺口後有限補查；超預算、仍缺關鍵證據或無可用工具時停止並保留限制。</p>
+<p>Reviewer 執行規則：核對每個數字能否由同版本工具輸出重現，關鍵檢查季度/累計、TTM/單季、實際股價/EPS、BVPS、CapEx符號、股數/淨負債、WACC&gt;g、財報期與available_at、同業/產業參照。可用read_evidence/get_financial_snapshot/get_macro_snapshot/calculate_metrics；如需價格或新來源搜尋，退件給Researcher，不擴大自己的工具權限。decision為pass/revise/insufficient，issues逐项含claim_id、severity、reason、required_evidence；不得以文字流暢或估值正面作通過理由。你無發佈權限，仍由人核准。</p>
+<p>預算沿用每job最多8次模型發送（含重試）、10次工具、2輪補查、同時1job、180秒主動執行；實際免費quota由組長W01查核。Render2GB是運行目標，非已購買或無限併發。PDF、收藏、比較表純讀、產業圖純讀為0次LLM。</p>
+<h2>功能驗收及交接</h2>
+<p>N01季度/YTD/TTM及年度相容回歸；N02同業/参照角色、五指標/NA/可得時間；N03收藏及已發布清單、狀態/時間；N04歷史可得/調整價格/NA分母；N05線上PDF持久/手機/未核准拒絕；N06圖資料來源/上限/2D/0次LLM（條件式）；N07Researcher選工具與Reviewer矛盾補查；N08 2GB實測與重整4-5檔不啟動4-5個昂貴job。以上由技術人員提供實際結果，未執行填尚未執行。</p>
+<p>每週四18:00技術組交C/E核准素材，週五18:00全員交件、20:00驗收。素材固定包含事實句、source URL/檔案、版本、允許用語、限制、圖/CSV；缺項用「待B資料」「待D結果」「待A截圖」標註。C/E先作已知文稿/版型，由組長24小時內協調缺料。</p>
+<p>文稿與簡報維持既有20-25頁正文、16主頁+4備用頁：季度/同業納入資料方法頁09，儀表板/PDF/2D圖納入網站頁11，驗證納入12-15，完整欄位與更多圖片放附錄。F09季度/TTM示意（B供、E排）；F10同業及參照表（B供、E排）；S07儀表板（A供）；S08 2D圖與來源面板（A/B供，條件式）；D提供N01-N08結果表。不得為新增功能自行增加簡報主頁或虛構研究結果。</p>
+<p>所有產物存E:\專題；Notion附件或GitHub文件連結須讓組員可讀，本機路徑只作備份定位。分工仍以組長/A/B/C/D/E標示，尚未提供姓名對照，不捏造Notion人員帳號。新計畫狀態為未開始，不能把匯入文件標成程式已完成。</p>
+</body></html>

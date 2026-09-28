@@ -1,0 +1,42 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>07｜論文、簡報與最終展示規格</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1200px;margin:32px auto;padding:0 20px;color:#202829}h1{font-size:28px}h2{font-size:22px}a{color:#087f78}table{border-collapse:collapse;display:block;overflow:auto;font-size:14px}td,th{border:1px solid #cad3d2;padding:8px;text-align:left}th{background:#edf4f3}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f4;padding:16px}p,code{overflow-wrap:anywhere}</style></head><body><h1>07｜論文、簡報與最終展示規格</h1><p><a href="00_%E5%B0%88%E9%A1%8C%E5%9F%B7%E8%A1%8C%E7%B8%BD%E5%85%A5%E5%8F%A3.html">返回專題總入口</a></p>
+<h2>論文固定章節（正文20至25頁，參考資料與附錄另計）</h2>
+<ol>
+<li>緒論3頁：資料分散、可驗證性問題、固定摘要流程限制、三項研究問題、研究範圍。C主筆、組長核准。</li>
+<li>文獻探討3頁：Agent與workflow、工具使用、金融Agent；第08章三篇論文加官方文件比較，不把他人基準成績當本系統能力。C主筆。</li>
+<li>系統與方法6頁：現況、六工具、雙角色狀態、資料時間/版本、配額、發布/線上PDF；組長/B/D給規格與圖，C整合文字。</li>
+<li>實驗設計4頁：30案/10開發20測試、三模式、人工標註、指標、9份前瞻觀察與限制。D提供技術稿，C整理。</li>
+<li>結果與討論3至5頁：實際比較、錯誤案例、成本延遲、沒有改善的項目與原因；D解讀，C編排。</li>
+<li>結論與限制1至2頁：回答RQ1至RQ3、樣本與模型限制、明確列為未做的延伸方向。C初稿、組長定案。</li>
+</ol>
+<p>E負責封面、目錄、圖表目錄、頁碼、圖說、引用格式與輸出，不負責發明結果。預設A4、本文12pt、1.5行距、四邊2.5cm、繁體中文字體採可嵌入的思源宋體或已授權等效字體，圖表文字最小9pt。引用採APA風格，網頁有查閱日，論文記作者、年、標題、arXiv/DOI；學校模板若不同由組長登記覆蓋排版規則。</p>
+<h2>投影片固定16張主頁＋4張備用頁</h2>
+<p>01題目/組員/日期；02研究動機與使用者困難；03三個研究問題；04現有系統與本期缺口；05相關研究比較；06整體架構；07Researcher工具選擇；08Reviewer退件補查；09證據快照與數字口徑；10免費額度/2GB運行限制；11網站與線上PDF；12三模式實驗設計；13主要品質與成本結果；14成功/失敗兩個案例；15研究限制與前瞻觀察；16結論與展示入口。</p>
+<p>備用17：資料契約；18：全部指標與分母；19：錯誤與429處理；20：參考資料。不得把所有程式碼塞入主頁。E負責版面與講稿彙整；C提供02/03/05/15/16文字，A提供11及動作畫面，B提供09，D提供12/13/14/18，組長提供06/07/08/10。</p>
+<p>版面：16:9，標題28至32pt、本文20至24pt、來源最小12pt；每頁一個主要訊息，最多5條文字。固定白底、深灰文字，研究/證據使用青綠，覆核/風險使用紅色輔助；不用裝飾性股票照片取代證據畫面。圖須可讀，不截掉來源和版本。</p>
+<h2>固定圖表與素材清單</h2>
+<p>F01整體資料流（組長）；F02雙Agent補查狀態圖（組長/D）；F03來源→主張→覆核證據鏈（B）；F04三模式實驗設計（D）；F05品質比較（D）；F06請求/token/延遲比較（D）；F07正常與衝突trace對比（A/D）；F08前瞻觀察圖與NA說明（D）。E按核准內容排版，不自己算新指標。</p>
+<p>S01網站研究入口、S02執行狀態/預算、S03補查軌跡、S04來源版本與主張、S05資料不足狀態、S06手機PDF預覽與下載。A在W07先給初版、W12给定稿，每張附環境、日期、版本、真實/回放標籤。示範用人工植入衝突必須標「測試案例」，不可暗示是真實新聞。</p>
+<h2>10分鐘口頭簡報分配</h2>
+<p>組長3分鐘：主軸、Agent定義、架構；A1.5分鐘：網站與PDF；B1.5分鐘：證據與金融口徑；D2分鐘：覆核、測試與結果；C1分鐘：動機與研究問題；E1分鐘：結論與限制。另留3分鐘操作示範與QA，不把示範算成已確認的教授規定。</p>
+<h2>3分鐘操作腳本</h2>
+<p>00:00至00:30：開研究工作台，明示LIVE或REPLAY，選2330與固定研究問題，顯示資料截止時間。
+00:30至01:20：提交或打開已開始的live job，展示模型選用工具、來源返回及預算計數；不承諾一定秒出，排隊/限流就如實顯示。
+01:20至02:10：開已保存的「衝突測試」trace，指出Reviewer如何要求核對期間/單位，Researcher補查後修正；此段明確稱回放。
+02:10至02:40：開人工核准的研究報告，點來源，再由網站下載PDF，核對版本。
+02:40至03:00：開資料不足案例，說明系統為何拒絕下結論。結尾一句：「本系統的價值是可查證、可停止與可量測，不是保證預測股價。」</p>
+<h2>備援與故障說法</h2>
+<p>12/11前保存三種trace、三份PDF與3分鐘螢幕錄影到E槽交接包。API無額度：展示paused_quota與已標示回放的真實歷史執行；網站網路故障：播放錄影並說明錄製日期/版本，不把錄影冒充現場運算。12/18當天只做健康檢查，不升級依賴、不改模型、不新增功能。</p>
+<h2>最終檔案結構</h2>
+<pre><code class="language-text">E:\專題\2026秋季成果\final\
+  README_成果索引.md
+  report\論文.docx、論文.pdf、references.md
+  slides\專題簡報.pptx、專題簡報.pdf、講稿.md
+  demo\demo_3min.mp4、normal_trace.json、conflict_trace.json、insufficient_trace.json
+  research\三份已核准PDF與對應report.json
+  evaluation\cases_manifest.json、runs.jsonl、scores.csv、metrics.csv、plots\
+  handoff\release_commit.txt、SETUP.md、OPERATIONS.md、.env.example、backup_manifest.json
+</code></pre>
+<p>以上是到期必交結構，不表示本次已產出論文或跑完實驗；本次產出的是執行手冊及任務。12/18 12:00 組長對第01章八件成果逐項簽收，E在17:00前依組長指定學校通道繳交；通道未公布時交組長保管並標記待學校通知，不擅自上傳公開網路。</p>
+<h2>六項網站功能的成果位置</h2>
+<p>季度/TTM與同業比較納入方法第09頁素材；儀表板、線上PDF及通過閘門的2D圖納入網站第11頁；驗證納入12至15頁。沿用正文20至25頁、16主頁加4備用頁，不另加一套簡報。B交F09季度/TTM示意、F10比較表；A交S07儀表板與條件式S08來源圖；D交N01至N08結果；C整理文字，E排版。未完成或延後的2D圖必須如實標示。</p>
+</body></html>

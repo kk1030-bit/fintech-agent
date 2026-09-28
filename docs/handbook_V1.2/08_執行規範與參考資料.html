@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>08｜執行規範、風險與指定參考資料</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1200px;margin:32px auto;padding:0 20px;color:#202829}h1{font-size:28px}h2{font-size:22px}a{color:#087f78}table{border-collapse:collapse;display:block;overflow:auto;font-size:14px}td,th{border:1px solid #cad3d2;padding:8px;text-align:left}th{background:#edf4f3}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f4;padding:16px}p,code{overflow-wrap:anywhere}</style></head><body><h1>08｜執行規範、風險與指定參考資料</h1><p><a href="00_%E5%B0%88%E9%A1%8C%E5%9F%B7%E8%A1%8C%E7%B8%BD%E5%85%A5%E5%8F%A3.html">返回專題總入口</a></p>
+<h2>版本與權限</h2>
+<p>V1.2統一執行版，2026/09/13定稿。本手冊已整合全部需求，成員不需閱讀歷史補丁。12/18是使用者指定期限；9/14起跑、三檔台股、14週、8次請求上限、工作量與成果頁數是本次制定的執行基線。這份文件完整定義範圍，但無法代替尚未取得的帳戶額度、尚未跑的測試或尚未產生的研究結果。</p>
+<p>Notion主頁、章節、任務資料庫是一套手冊，不是不同版本。初始狀態全部未開始。成員只更新自己的進度、附件與阻塞；只有組長改需求與驗收。頁面分享權限由組長在Notion管理，本次不公開發布、不擅自邀請人。</p>
+<h2>唯一變更流程</h2>
+<p>組員或AI新建議先不實作。組長記錄CR編號、提出日期、原因、原/新內容、影響任務、成本與期限、核准人，核准後才更新主章與任務。所有變更仍須維持12/18交付；不能口頭變更後讓C/E猜。</p>
+<p>已核定範圍：C/E只做文書、免費額度下的工具型雙Agent、Render2GB目標、網站持久PDF、六項功能與14週84項工作。這些是待實作規格，不是已購買或已完成證據。後續只有組長核准的新要求才另建CR。</p>
+<h2>W01必查，不留給文書成員決定</h2>
+<p>組長：目前repo版本/本機位置、AIStudio實際model_id與RPM/TPM/RPD、是否有可用開發者福利、呼叫1次的成功紀錄、Render後台實際instance、DB儲存/期限/備份、管理權限、現有测试結果。秘密值只放secret manager/env。</p>
+<p>本次看到render.yaml仍是plan:free；它不是後台實際方案的充分證據。W01只核對與製作升級清單；任何付費開通由組長自行確認執行，不把寫計畫當成購買授權。價格以當時官方後台為準，不沿用未核實的舊價錢。</p>
+<p>學校論文模板、繳交入口和實際答辯時長目前未知；依第07章預設先做，不因此延後進度。學校硬性規則出現時由組長登記格式變更，組員不自行新增學术要求。</p>
+<h2>風險與既定處置</h2>
+<ul>
+<li>配額不足：W01用900次含整合/前瞻/展示的總預算與J估算日數；mock優先、正式分批，J=0暫停live，不多開key規避額度，不自動付費。</li>
+<li>模型下架或行為改變：模型ID与prompt版本化；只切換經組長核准且通過10個開發案的相容模型，正式實驗分版本，不混表。</li>
+<li>2GB仍不足：受控資料批次、單worker、PDF串行與DB配額監控；先量RSS再改並行，不能只買網域。未核准不增加月費。</li>
+<li>來源缺少/被封鎖：回傳no_data、保留旧快照與時間，結果標不足；禁止突破登入牆或猜財報數字。</li>
+<li>進度滑落：受阻24小時內找組長；W08核心凍結、W12所有功能凍結，後續只修critical問題。先刪除未列入必交的裝飾，不刪Agent閉環、線上PDF或評估。</li>
+<li>C/E沒有素材：先做固定章節框架/版型，記受阻並由指定B/D/A交付，不把技術責任轉回C/E。</li>
+<li>技術人員缺席：組長備援B資料適配與D覆核runner，A備援展示；C/E保留最新交接附件，但不臨時負責修復。</li>
+<li>數據重分發風險：引用公開原始來源與短片段，保留授權註记；不把未授權全文或私人資料上傳外部AI，不宣稱目前能商業化售賣行情。</li>
+</ul>
+<h2>指定參考資料（C不用自行擴充書單）</h2>
+<p>以下公開入口於2026/09/13核對。C製作固定8筆文獻/文件卡：作者或機構、年份/查閱日、類型、研究問題、方法摘要、本專題採用點、不能據此聲稱的結論、原始URL。前三項只根據已閱讀全文/章節摘要，不捏造效能數字。</p>
+<p>R01 <a href="https://arxiv.org/abs/2210.03629">ReAct: Synergizing Reasoning and Acting in Language Models</a>，Yao等，2022初稿/2023版本。作為以行動取得觀察再調整研究的參考，不引用其一般任務分數作為股價預測能力。</p>
+<p>R02 <a href="https://arxiv.org/abs/2302.04761">Toolformer: Language Models Can Teach Themselves to Use Tools</a>，Schick等，2023。比較模型使用工具的設計思想；本專題沒有做其訓練程序，不宣稱重現Toolformer。</p>
+<p>R03 <a href="https://arxiv.org/abs/2405.14767">FinRobot: An Open-Source AI Agent Platform for Financial Applications using Large Language Models</a>，Yang等，2024白皮書。金融Agent平台的相關工作，作研究定位參考，不以其架構證明我們可獲利。</p>
+<p>R04 <a href="https://www.anthropic.com/engineering/building-effective-agents">Building effective agents</a>，Anthropic，2024工程文章。用於workflow/agent區分、工具與停止条件，是工程觀點，不當作嚴格統一學術定義。</p>
+<p>R05 <a href="https://ai.google.dev/gemini-api/docs/function-calling">Gemini function calling</a>，Google官方文件。供實作函式schema、模型選工具與回傳工具結果；實際SDK版本由組長鎖定。</p>
+<p>R06 <a href="https://ai.google.dev/gemini-api/docs/rate-limits">Gemini API rate limits</a>，Google官方文件。用於配額治理的背景，帳戶實際數字另由W01保存脫敏紀錄。</p>
+<p>R07 <a href="https://ai.google.dev/gemini-api/docs/pricing">Gemini API pricing</a>，Google官方文件。區分免費與付費使用條件，不預測未來價格。</p>
+<p>R08 <a href="https://github.com/kk1030-bit/fintech-agent/tree/53816d4fb7d178d309cb556bd55fe9f49533e7e5">fintech-agent固定版本程式</a>，包含PROJECT_STATUS.md、web_app.py、main.py、requirements.txt、report_builder.py及macro_agent。是本專題實作基線，不是外部學術證據；狀態文件日期較舊，現況以程式及當週實測確認。</p>
+<p>附加運維連結（不計8筆卡）：<a href="https://developers.google.com/program/plans-and-pricing">Google Developer Program</a>、<a href="https://render.com/pricing#compute">Render Compute</a>。</p>
+<h2>本次查核可重現性</h2>
+<p>2026/09/13，本機 E:\專題\fintech-agent 的 HEAD 與遠端 HEAD 均為 <code>53816d4fb7d178d309cb556bd55fe9f49533e7e5</code>。程式讀取與 git ls-remote 查核，不等於線上服務或外部API已驗收。</p>
+<h2>工時與功能取捨</h2>
+<p>預估584人時，W01組長核對每人可用時間；估算不是成員承諾。10/23檢查Agent閉環、F01/F02及案例來源凍結，未過則延後F06互動圖；若通過，11/06前完成，逾期轉後續版本。不占用正式評估或12/11定稿時間。金鑰由組長建立並保管，C/E不負責API。</p>
+</body></html>
