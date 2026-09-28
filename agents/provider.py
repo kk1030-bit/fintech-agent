@@ -122,13 +122,16 @@ class GeminiAdapter:
         from google.genai import errors
 
         config = self.build_config(role, system_instruction)
-        prompt_text = system_instruction + "\n" + json.dumps(
+        # Tool declarations are billed as input too (live check 2026-09-28: ~500 tokens),
+        # so they are part of the text we estimate and hash.
+        tools_json = json.dumps([t for t in TOOL_DECLARATIONS if t["name"] in ROLE_TOOLS[role]], ensure_ascii=False)
+        prompt_text = system_instruction + "\n" + tools_json + "\n" + json.dumps(
             [c.model_dump(mode="json", exclude_none=True) if hasattr(c, "model_dump") else c for c in contents],
             ensure_ascii=False,
         )
         prompt_hash = _hash(prompt_text)
         for attempt in range(self.gate.limits.max_retries + 1):
-            res = self.gate.reserve_call(role, prompt_text, prompt_hash)
+            res = self.gate.reserve_call(role, prompt_text, prompt_hash, prompt_version=self.prompt_version)
             started = self.monotonic()
             try:
                 resp = self.client.models.generate_content(model=self.model_id, contents=contents, config=config)

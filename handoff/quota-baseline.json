@@ -15,7 +15,7 @@
     "checked_at": "2026-09-28",
     "selected_by": "組長 2026-09-28，條件：W04–W05 以 10 個開發案驗證工具選擇品質，10/23 凍結前定案；不足則退回 gemini-3.6-flash 並縮減實驗",
     "api_key_present_on_this_mac": true,
-    "desensitised_live_test": "not_run"
+    "desensitised_live_test": "done 2026-09-28 17:27: 3 sends ok, 2,875 tokens; see quota-test-log.md"
   },
   "daily_research_jobs_J": {
     "formula": "min(6, floor(max(0, floor(0.8 * RPD) - other_daily_reserved) / 8))",

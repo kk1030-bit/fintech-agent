@@ -25,10 +25,23 @@
 - 命令：`.venv/bin/python -m pytest -q tests` → **56 passed, 1 warning**。
 - 新增：thinking 預設 minimal、model 不支援的等級拒絕啟動、thought signature 原樣回傳、預留不再另加 thinking。
 
-## Live 驗證 — 未執行
+## 2026-09-28 17:27 Live 驗證（組長核准，最多 3 次）— 已執行
 
-- 原因：本機 `.env` 尚無 `GEMINI_API_KEY`、`GEMINI_MODEL`（2026-09-28 16:00 檢查，只看變數名稱）。quota 已由組長填入。
-- 待組長提供後的建議最小批次（共 ≤3 次發送，待組長核准）：
-  1. 一次純文字、無工具的脫敏請求（W01 步驟 2），記錄 usageMetadata 與估計 token 的差距。
-  2. 一次工具呼叫往返（2 次發送），工具回合成 fixture（`synthetic_fixture: true`），不涉及真實財報。
-- 每次結果貼在本檔：日期時間、model_id、model_version、prompt_hash、usage、估計 token、結果碼。
+- 命令：`.venv/bin/python scripts/live_check.py`（commit `28e9354`）；硬上限 3 次、無重試；本機暫存 DB，未碰 Supabase；工具回傳合成資料（`synthetic_fixture: true`）。
+- model：`gemini-3.5-flash-lite`，回傳 model_version 同名；thinking_level minimal（`thoughts_token_count` 為 null）。
+- job：`5695361b-f212-4dbe-a50b-b4a9aae4720a`；`calls_used` 3、`tokens_observed` 2,875；今日額度用掉 3/500。
+
+| 次 | 角色 | 內容 | 結果 | prompt / 輸出 / total token | 送出前預留 |
+|---|---|---|---|---|---|
+| 1 | reviewer | 只回「連線正常」 | 回「連線正常。」，未呼叫工具 | 597 / 4 / 601 | 1,595 |
+| 2 | researcher | 查 2330 五日價 | 呼叫 `get_price_window`（參數通過驗證，工具回 ok） | 1,007 / 57 / 1,064 | 1,638 |
+| 3 | researcher | 帶回工具結果 | 正確說明資料標示為合成、非真實股價 | 1,181 / 29 / 1,210 | 2,015 |
+
+- **工具往返**：官方 SDK 真實往返成功；`thought_signature` 有原樣帶回（True）。
+- **發現 1（已修）**：輸入預估少算。預留中的輸入估計只有 95／138／515，實際 prompt 為 597／1,007／1,181，因為工具宣告本身也計入輸入（約 500–900 token）。已改為把該角色的工具宣告納入預估；以相同內容離線重算，send 1 預估 1,074（實際 597）、send 2 預估 1,683（實際 1,007），恢復保守。新增測試 `test_estimate_counts_tool_declarations`。
+- **發現 2（已修）**：`model_usage.prompt_version` 記成 job 的 `v1.2`，事件記的是 adapter 的 `live-check-v1`，不一致。已改為兩處都記 adapter 版本；新增測試 `test_ledger_uses_adapter_prompt_version`。
+- 修正後 `.venv/bin/python -m pytest -q tests` → **58 passed**。修正後未再發送 live 請求。
+
+## 待 W04 注意（不在本週範圍）
+
+- 研究員一開始的輸入就約 1,000 token（實際）／1,700（預估），3,000 輸入上限在多輪補查時可能偏緊；預估約高估 1.7 倍，W04 可依累積的 live usage 校準係數，須經組長核准並保持不少算。

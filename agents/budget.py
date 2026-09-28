@@ -148,7 +148,8 @@ class BudgetGate:
         if req >= math.floor(HEADROOM * q.rpm) or tok + reserve_tokens > math.floor(HEADROOM * q.tpm):
             raise BudgetExceeded("rate_limited", "近 60 秒 RPM/TPM 已達 80%", wait_seconds=60)
 
-    def reserve_call(self, role: str, prompt_text: str, prompt_hash: str) -> Reservation:
+    def reserve_call(self, role: str, prompt_text: str, prompt_hash: str,
+                     prompt_version: str | None = None) -> Reservation:
         lim, job = self.limits, self.job
         used = job.get("calls_used", 0)
         if used >= lim.max_calls:
@@ -169,7 +170,8 @@ class BudgetGate:
         day_key = datetime.fromtimestamp(self._now(), QUOTA_DAY_TZ).date().isoformat()
         usage_id = self.store.record_send(
             job_id=job["job_id"], day_key=day_key, role=role, model_id=self.quota.model_id or "",
-            prompt_version=job.get("prompt_version", ""), prompt_hash=prompt_hash, reserved_tokens=reserve,
+            prompt_version=prompt_version or job.get("prompt_version", ""), prompt_hash=prompt_hash,
+            reserved_tokens=reserve,
         )
         return Reservation(usage_id=usage_id, call_number=used + 1, reserved_tokens=reserve, role=role)
 

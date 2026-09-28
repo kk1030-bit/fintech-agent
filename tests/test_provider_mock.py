@@ -206,3 +206,23 @@ def test_reservation_includes_thinking_inside_output_cap(adapter_factory, store)
     adapter.send("researcher", [types.Content(role="user", parts=[types.Part.from_text(text="x")])], "sys")
     usage = store.list_usage(adapter.job_id)[0]
     assert usage["reserved_tokens"] < 3000 + 1500 + 1  # no separate thinking reservation
+
+
+def test_estimate_counts_tool_declarations(adapter_factory, store):
+    # Live check 2026-09-28: send 1 used 597 prompt tokens though the text was ~70 tokens,
+    # because declarations are billed as input. The reservation must cover them.
+    adapter, _, _ = adapter_factory([text_response("ok")])
+    adapter.send("reviewer", [types.Content(role="user", parts=[types.Part.from_text(text="連線測試")])], "sys")
+    reserved = store.list_usage(adapter.job_id)[0]["reserved_tokens"]
+    assert reserved - 1500 >= 597
+
+
+def test_ledger_uses_adapter_prompt_version(store):
+    job, _ = store.create_job(validate_job_request(job_request()), MODEL)
+    _, token = store.claim_next("w1")
+    gate = BudgetGate(store=store, job=store.get_job(job["job_id"]),
+                      persist=lambda ch: store.update_job(job["job_id"], "w1", token, ch),
+                      quota=ProjectQuota(model_id=MODEL, rpm=100, tpm=10**6, rpd=1000))
+    adapter = GeminiAdapter(FakeClient([text_response("ok")]), MODEL, gate, prompt_version="researcher-v1.2.1")
+    adapter.send("researcher", [types.Content(role="user", parts=[types.Part.from_text(text="x")])], "sys")
+    assert store.list_usage(job["job_id"])[0]["prompt_version"] == "researcher-v1.2.1"
