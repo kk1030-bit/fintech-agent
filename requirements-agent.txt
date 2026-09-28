@@ -1,0 +1,6 @@
+# V1.2 agent runtime + offline tests (W02-L/W03-L). Kept separate from
+# requirements.txt so the current Render build is unchanged until W08.
+-r requirements.txt
+google-genai==2.25.0
+langgraph==1.2.12
+pytest==9.1.1

@@ -1,0 +1,102 @@
+{
+  "contract_version": "v1.2",
+  "status": "draft_W02-L",
+  "note": "Shapes from handbook ch.02 「資料契約 V1.2」 and ch.04 F01. Fields marked pending are specifications, not existing code. Quarterly field names must be confirmed with B (W02-B data/tool-contracts.json not yet in repo).",
+  "job": {
+    "job_id": "uuid",
+    "ticker": "2330|2317|2454 (2379/3034 comparison-only, no LLM job)",
+    "market": "TW",
+    "currency": "TWD",
+    "question_version": "macro-fundamental-valuation-v1",
+    "cutoff_at": "ISO-8601 UTC",
+    "source_snapshot_id": "immutable-id",
+    "mode": "workflow|single|dual",
+    "status": "queued|running|paused_quota|succeeded|insufficient_evidence|timed_out|failed|cancelled",
+    "stage": "research|tools|review|revision|finished",
+    "model_id": "actual configured id, null until configured",
+    "prompt_version": "v1.2",
+    "calls_used": "int 0..8",
+    "tokens_observed": "int",
+    "tokens_reserved": "int",
+    "tool_calls_used": "int 0..10",
+    "supplement_rounds": "int 0..2",
+    "active_seconds": "number <= 180",
+    "stop_reason": "string|null",
+    "checkpoint_version": "int, bumped on every fenced write",
+    "idempotency_key": "string <= 128, server-side only"
+  },
+  "job_event": {
+    "job_id": "uuid",
+    "event_seq": "int",
+    "created_at": "ISO-8601",
+    "role": "system|researcher|reviewer",
+    "event_type": "job_created|lease_acquired|lease_recovered|model_call|model_error|tool_call|...",
+    "tool_name": "one of six tools|null",
+    "detail": "redacted args hash, output hash, model_id, model_version, prompt_version, prompt_hash, usageMetadata; no secrets, no hidden reasoning"
+  },
+  "evidence": {
+    "evidence_version_id": "immutable-id",
+    "source_url": "verified-public-url",
+    "source_type": "financial|macro|price|official_document",
+    "published_at": "ISO-8601|null (unknown announcement time stays null)",
+    "captured_at": "ISO-8601 UTC",
+    "available_at": "published_at if verified, else captured_at; never earlier",
+    "period": "string|null",
+    "currency": "string|null",
+    "unit": "string|null",
+    "content_hash": "sha256",
+    "synthetic_fixture": "bool"
+  },
+  "financial_value_F01": {
+    "stock_id": "string",
+    "metric": "string",
+    "period_start": "date",
+    "period_end": "date (financial period end, NOT announcement date)",
+    "fiscal_year": "int",
+    "fiscal_quarter": "1..4|null",
+    "period_basis": "single_quarter|ytd|annual|instant",
+    "value": "number|null (null != 0)",
+    "missing_reason": "string|null",
+    "unit": "string",
+    "currency": "string",
+    "statement_basis": "consolidated|standalone",
+    "source_url": "string",
+    "source_dataset": "string",
+    "source_version": "string",
+    "published_at": "ISO-8601|null",
+    "captured_at": "ISO-8601",
+    "available_at": "ISO-8601",
+    "snapshot_id": "string",
+    "content_hash": "sha256",
+    "synthetic_fixture": "bool",
+    "version_key": "stock_id + metric + period_end + period_basis + statement_basis + source_version (pending confirmation with B)"
+  },
+  "claim": {
+    "claim_id": "c1",
+    "kind": "fact|inference|unknown",
+    "text": "statement",
+    "evidence_refs": ["evidence_version_id in this job's snapshot"],
+    "limitations": []
+  },
+  "review": {
+    "decision": "pass|revise|insufficient",
+    "issues": [
+      {"claim_id": "c1", "severity": "critical|minor", "reason": "brief reason", "required_evidence": "specific missing fact"}
+    ]
+  },
+  "publication": {
+    "status": "draft|approved|pdf_failed|published",
+    "report_version_id": "immutable-id",
+    "report_hash": "sha256",
+    "pdf_hash": "sha256",
+    "storage_key": "versioned-key",
+    "rule": "published only after the versioned Storage write and hash check succeed (W07, pending)"
+  },
+  "published_list_for_A": {
+    "status": "pending_W07",
+    "fields": ["stock_code", "company", "report_version_id", "publication_status", "cutoff_at", "financial_period",
+               "published_at", "source_updated_at", "valuation_status", "data_quality_risk", "pdf_status"],
+    "timezone": "Asia/Taipei (displayed)",
+    "llm_calls": 0
+  }
+}

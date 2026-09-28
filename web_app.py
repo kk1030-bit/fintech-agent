@@ -14,6 +14,7 @@ from typing import Any
 
 from flask import Flask, jsonify, render_template, request, send_from_directory, url_for
 
+from agents.api import bp as research_jobs_bp
 from financial_analyzer import analyze_financials
 from fundamental_uploader import upload_to_supabase
 from main import (
@@ -28,6 +29,7 @@ ROOT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT_DIR / "output"
 
 app = Flask(__name__)
+app.register_blueprint(research_jobs_bp)  # V1.2 research jobs; deny-by-default without RESEARCH_API_TOKEN
 
 
 def output_url(path: str | None) -> str | None:
