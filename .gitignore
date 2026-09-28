@@ -36,3 +36,10 @@ Thumbs.db
 
 # Anaconda / Conda
 *.conda
+
+# V1.2 契約、交接與手冊資料需要進版控（覆蓋上面的 *.json / *.csv）
+!contracts/*.json
+!handoff/*.json
+!docs/**/*.csv
+# 本機 job 佇列資料庫
+*.sqlite3
