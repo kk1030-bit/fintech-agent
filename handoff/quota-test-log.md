@@ -19,9 +19,15 @@
 | peer_comparison 最多 4 家 | `test_peer_comparison_rejections` | 通過 |
 | 未核實 quota 不送出 | `test_unknown_quota_blocks_live_sends`、`test_unknown_quota_sends_nothing` | 通過 |
 
+## 2026-09-28 thinking 修正後重跑 — 已執行
+
+- 變更：改用 `thinking_level`（預設 minimal），thinking 計入 1,500 輸出上限；model 鎖定 `gemini-3.6-flash`。
+- 命令：`.venv/bin/python -m pytest -q tests` → **56 passed, 1 warning**。
+- 新增：thinking 預設 minimal、model 不支援的等級拒絕啟動、thought signature 原樣回傳、預留不再另加 thinking。
+
 ## Live 驗證 — 未執行
 
-- 原因：本機 `.env` 無 `GEMINI_API_KEY`；`GEMINI_MODEL` 未定；quota 未核實（J=0）。
+- 原因：本機 `.env` 尚無 `GEMINI_API_KEY`、`GEMINI_MODEL`（2026-09-28 16:00 檢查，只看變數名稱）。quota 已由組長填入。
 - 待組長提供後的建議最小批次（共 ≤3 次發送，待組長核准）：
   1. 一次純文字、無工具的脫敏請求（W01 步驟 2），記錄 usageMetadata 與估計 token 的差距。
   2. 一次工具呼叫往返（2 次發送），工具回合成 fixture（`synthetic_fixture: true`），不涉及真實財報。

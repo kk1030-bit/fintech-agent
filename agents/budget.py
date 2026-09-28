@@ -8,8 +8,9 @@ Rules enforced here, all before anything is sent to the model:
   Researcher cannot use it in the initial research stage. Calls 6–8 are for
   revision or review only.
 - ≤ 3,000 input tokens per send (conservative estimate, reconciled against the
-  provider's usage afterwards); ≤ 1,500 output tokens + configured thinking
-  budget; ≤ 40,000 reserved/observed tokens per job.
+  provider's usage afterwards); ≤ 1,500 output tokens per send, thinking
+  tokens included (Gemini counts them inside max_output_tokens);
+  ≤ 40,000 reserved/observed tokens per job.
 - ≤ 10 tool calls per job, ≤ 2 identical tool calls, ≤ 2 supplement rounds,
   ≤ 180 s active time.
 - Project-wide RPM/TPM/RPD with 20 % headroom, shared by every Gemini user in
@@ -35,8 +36,7 @@ class BudgetLimits:
     max_calls: int = 8
     initial_research_calls: int = 4
     max_input_tokens: int = 3000
-    max_output_tokens: int = 1500
-    thinking_budget: int = 0
+    max_output_tokens: int = 1500  # includes thinking tokens
     job_token_budget: int = 40000
     max_tool_calls: int = 10
     max_same_tool_call: int = 2
@@ -158,7 +158,7 @@ class BudgetGate:
         est_in = estimate_tokens(prompt_text)
         if est_in > lim.max_input_tokens:
             raise BudgetExceeded("input_too_large", f"輸入估計 {est_in} token > {lim.max_input_tokens}")
-        reserve = est_in + lim.max_output_tokens + lim.thinking_budget
+        reserve = est_in + lim.max_output_tokens
         committed = job.get("tokens_observed", 0) + job.get("tokens_reserved", 0)
         if committed + reserve > lim.job_token_budget:
             raise BudgetExceeded("token_limit", f"已用/保留 {committed} + 本次 {reserve} > {lim.job_token_budget}")

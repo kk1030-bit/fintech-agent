@@ -12,13 +12,14 @@ from agents.provider import GeminiAdapter
 from agents.tools import register_tool, _REGISTRY
 from conftest import job_request
 
-MODEL = "test-model"
+MODEL = "gemini-3.6-flash"  # locked by the lead in handoff/quota-baseline.json
 
 
-def fc_response(name, args, total=120):
+def fc_response(name, args, total=120, signature=b"sig-fixture"):
     return types.GenerateContentResponse(
         candidates=[types.Candidate(
-            content=types.Content(role="model", parts=[types.Part(function_call=types.FunctionCall(name=name, args=args))]),
+            content=types.Content(role="model", parts=[types.Part(
+                function_call=types.FunctionCall(name=name, args=args), thought_signature=signature)]),
             finish_reason=types.FinishReason.STOP,
         )],
         usage_metadata=types.GenerateContentResponseUsageMetadata(
@@ -48,7 +49,7 @@ class FakeClient:
         self.models = self
 
     def generate_content(self, *, model, contents, config):
-        self.calls.append({"model": model, "config": config, "n_contents": len(contents)})
+        self.calls.append({"model": model, "config": config, "n_contents": len(contents), "contents": list(contents)})
         item = self.script.pop(0)
         if isinstance(item, Exception):
             raise item
@@ -170,3 +171,38 @@ def test_reviewer_tool_escalation_is_refused_by_dispatch(adapter_factory, store)
     adapter.run_tool_roundtrip("reviewer", "覆核", "sys")
     ev = [e for e in store.list_events(adapter.job_id) if e["event_type"] == "tool_call"][0]
     assert ev["detail"]["status"] == "invalid_input" and "無權" in ev["detail"]["reason"]
+
+
+def test_thinking_level_defaults_to_minimal(adapter_factory):
+    adapter, client, _ = adapter_factory([text_response("ok")])
+    adapter.send("researcher", [types.Content(role="user", parts=[types.Part.from_text(text="x")])], "sys")
+    cfg = client.calls[0]["config"]
+    assert cfg.thinking_config.thinking_level == types.ThinkingLevel.MINIMAL
+    assert cfg.thinking_config.thinking_budget is None  # Gemini 3 uses levels, not budgets
+
+
+def test_thinking_level_must_match_model(store):
+    job, _ = store.create_job(validate_job_request(job_request()), "gemini-3.8-flash")
+    gate = BudgetGate(store=store, job=job, persist=lambda ch: job,
+                      quota=ProjectQuota(model_id="gemini-3.8-flash", rpm=1, tpm=1, rpd=1))
+    with pytest.raises(ValueError, match="thinking_level"):
+        GeminiAdapter(FakeClient([]), "gemini-3.8-flash", gate, prompt_version="v1.2")  # minimal unsupported
+    GeminiAdapter(FakeClient([]), "gemini-3.8-flash", gate, prompt_version="v1.2", thinking_level="low")
+
+
+def test_thought_signature_is_sent_back(adapter_factory, price_tool):
+    adapter, client, _ = adapter_factory([
+        fc_response("get_price_window", {"ticker": "2330", "end_at": "2026-09-30T13:30:00+08:00", "sessions": 5},
+                    signature=b"sig-abc"),
+        text_response("done"),
+    ])
+    adapter.run_tool_roundtrip("researcher", "q", "sys")
+    echoed = client.calls[1]["contents"][1]
+    assert echoed.role == "model" and echoed.parts[0].thought_signature == b"sig-abc"
+
+
+def test_reservation_includes_thinking_inside_output_cap(adapter_factory, store):
+    adapter, _, _ = adapter_factory([text_response("ok", total=100)])
+    adapter.send("researcher", [types.Content(role="user", parts=[types.Part.from_text(text="x")])], "sys")
+    usage = store.list_usage(adapter.job_id)[0]
+    assert usage["reserved_tokens"] < 3000 + 1500 + 1  # no separate thinking reservation

@@ -25,6 +25,17 @@ from .tools import TOOL_DECLARATIONS, ROLE_TOOLS, args_hash, dispatch
 
 RETRYABLE_CODES = {408, 429, 500, 502, 503, 504}
 
+# Gemini 3 thinking is set by thinking_level and cannot be turned off.
+# Allowed levels per model, from ai.google.dev/gemini-api/docs/thinking (checked 2026-09-28).
+THINKING_LEVELS = {
+    "gemini-3.8-flash": ("low", "medium", "high"),
+    "gemini-3.7-flash": ("low", "medium", "high"),
+    "gemini-3.6-flash": ("minimal", "low", "medium", "high"),
+    "gemini-3.5-flash": ("minimal", "low", "medium", "high"),
+    "gemini-3.5-flash-lite": ("minimal", "low", "medium", "high"),
+}
+DEFAULT_THINKING_LEVEL = "minimal"  # keeps most of the 1,500 output tokens for the answer
+
 
 def make_client(api_key: str | None = None):  # pragma: no cover - needs a real key
     """Official SDK client with SDK-level retries disabled."""
@@ -66,14 +77,17 @@ def _retry_after_seconds(exc: Exception) -> float | None:
 
 class GeminiAdapter:
     def __init__(self, client: Any, model_id: str, gate: BudgetGate, *, prompt_version: str,
-                 thinking_budget: int = 0, sleep: Callable[[float], None] = time.sleep,
+                 thinking_level: str = DEFAULT_THINKING_LEVEL, sleep: Callable[[float], None] = time.sleep,
                  monotonic: Callable[[], float] = time.monotonic):
         if not model_id:
             raise ValueError("GEMINI_MODEL 未設定；model id 由組長於 handoff/model-config.md 鎖定。")
         if gate.quota.model_id and gate.quota.model_id != model_id:
             raise ValueError(f"quota 核實的是 {gate.quota.model_id}，不能改用 {model_id}（不做 fallback）。")
+        allowed = THINKING_LEVELS.get(model_id)
+        if allowed is not None and thinking_level not in allowed:
+            raise ValueError(f"{model_id} 的 thinking_level 只能是 {allowed}，收到 {thinking_level}")
         self.client, self.model_id, self.gate = client, model_id, gate
-        self.prompt_version, self.thinking_budget = prompt_version, thinking_budget
+        self.prompt_version, self.thinking_level = prompt_version, thinking_level
         self.sleep, self.monotonic = sleep, monotonic
 
     @property
@@ -99,7 +113,7 @@ class GeminiAdapter:
             automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             max_output_tokens=self.gate.limits.max_output_tokens,
             temperature=0,
-            thinking_config=types.ThinkingConfig(thinking_budget=self.thinking_budget),
+            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel(self.thinking_level.upper())),
         )
 
     def send(self, role: str, contents: list[Any], system_instruction: str) -> Any:
@@ -142,6 +156,7 @@ class GeminiAdapter:
                 "model_version": getattr(resp, "model_version", None),
                 "prompt_version": self.prompt_version,
                 "prompt_hash": prompt_hash,
+                "thinking_level": self.thinking_level,
                 "usage": usage,
                 "finish_reason": str(getattr(candidate, "finish_reason", None)),
                 "function_calls": [fc.name for fc in (resp.function_calls or [])],
