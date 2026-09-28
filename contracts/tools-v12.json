@@ -1,0 +1,254 @@
+{
+  "tools_version": "tools-v12.0",
+  "tool_count": 6,
+  "role_tools": {
+    "researcher": [
+      "search_evidence",
+      "read_evidence",
+      "get_financial_snapshot",
+      "get_macro_snapshot",
+      "get_price_window",
+      "calculate_metrics"
+    ],
+    "reviewer": [
+      "read_evidence",
+      "get_financial_snapshot",
+      "get_macro_snapshot",
+      "calculate_metrics"
+    ]
+  },
+  "calculate_metrics_operations": [
+    "growth_rate",
+    "simple_return",
+    "pe_ttm",
+    "dcf_scenario",
+    "peer_comparison"
+  ],
+  "peer_comparison": {
+    "subject": "2454",
+    "allowed_comparators": [
+      "2379",
+      "3034",
+      "2330"
+    ],
+    "industry_reference_excluded_from_peer_stats": [
+      "2330"
+    ],
+    "max_companies_including_subject": 4,
+    "metrics": [
+      "pe_ttm",
+      "pb",
+      "revenue_yoy_quarter",
+      "fcf",
+      "dcf_gap"
+    ],
+    "required_values": [
+      "subject",
+      "comparators",
+      "price_as_of",
+      "cutoff",
+      "snapshot_ids",
+      "metrics",
+      "method_version"
+    ],
+    "llm_jobs_for_comparators": 0
+  },
+  "fixed_result_shapes": {
+    "invalid_input": {
+      "status": "invalid_input",
+      "tool": "str",
+      "reason": "str",
+      "data": null
+    },
+    "no_data": {
+      "status": "no_data",
+      "tool": "str",
+      "reason": "str",
+      "data": null
+    }
+  },
+  "declarations": [
+    {
+      "name": "search_evidence",
+      "description": "Search the approved, already-ingested source index (filings, announcements, macro). Returns source ids, titles, published/available time and a short abstract. No web crawling.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": [
+              "2330",
+              "2317",
+              "2454"
+            ]
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "ticker",
+          "query",
+          "cutoff",
+          "limit"
+        ]
+      }
+    },
+    {
+      "name": "read_evidence",
+      "description": "Read one immutable evidence fragment from this job's snapshot (≤1,200 Chinese chars) with paragraph, hash and exact source link. Unknown id returns no_data.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "evidence_version_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "evidence_version_id"
+        ]
+      }
+    },
+    {
+      "name": "get_financial_snapshot",
+      "description": "FinMind-based financial values available at cutoff: revenue, net income, TTM EPS, FCF, shares, net debt. Each value carries period, basis, currency, unit, source and available_at; missing values are null with a reason.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": [
+              "2330",
+              "2317",
+              "2454",
+              "2379",
+              "3034"
+            ]
+          },
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          }
+        },
+        "required": [
+          "ticker",
+          "cutoff"
+        ]
+      }
+    },
+    {
+      "name": "get_macro_snapshot",
+      "description": "Approved macro snapshot (whitelisted series only) with observation period and release/revision time.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "series_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5
+          }
+        },
+        "required": [
+          "cutoff",
+          "series_ids"
+        ]
+      }
+    },
+    {
+      "name": "get_price_window",
+      "description": "Taiwan-stock closing prices for the last 1, 5 or 20 trading sessions ending at end_at, with raw/adjusted basis. Missing or suspended = no_data.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": [
+              "2330",
+              "2317",
+              "2454",
+              "2379",
+              "3034"
+            ]
+          },
+          "end_at": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "sessions": {
+            "type": "integer",
+            "enum": [
+              1,
+              5,
+              20
+            ]
+          }
+        },
+        "required": [
+          "ticker",
+          "end_at",
+          "sessions"
+        ]
+      }
+    },
+    {
+      "name": "calculate_metrics",
+      "description": "Deterministic calculations only: growth_rate, simple_return, pe_ttm, dcf_scenario, peer_comparison (2454 vs 2379/3034, 2330 as industry reference, max 4 companies). Values must cite evidence_refs; invalid inputs return null with a reason.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": [
+              "growth_rate",
+              "simple_return",
+              "pe_ttm",
+              "dcf_scenario",
+              "peer_comparison"
+            ]
+          },
+          "values": {
+            "type": "object"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "operation",
+          "values",
+          "evidence_refs"
+        ]
+      }
+    }
+  ],
+  "implementation_status": {
+    "search_evidence": "pending_W03-B",
+    "read_evidence": "pending_W03-B",
+    "get_financial_snapshot": "pending_W03-B",
+    "get_macro_snapshot": "pending_W03-B",
+    "get_price_window": "pending_W03-B",
+    "calculate_metrics": "pending_W03-B"
+  }
+}
