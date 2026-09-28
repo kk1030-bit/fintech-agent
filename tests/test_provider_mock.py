@@ -12,7 +12,7 @@ from agents.provider import GeminiAdapter
 from agents.tools import register_tool, _REGISTRY
 from conftest import job_request
 
-MODEL = "gemini-3.6-flash"  # locked by the lead in handoff/quota-baseline.json
+MODEL = "gemini-3.5-flash-lite"  # locked by the lead in handoff/quota-baseline.json
 
 
 def fc_response(name, args, total=120, signature=b"sig-fixture"):

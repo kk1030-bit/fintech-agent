@@ -5,45 +5,45 @@
   "status": "gemini_verified_by_lead; render/supabase unverified",
   "rule": "Unknown values stay null. Do not fill with guesses, student-plan claims or public tier tables. agents/budget.py treats any null as J = 0 (mock only).",
   "gemini": {
-    "model_id": "gemini-3.6-flash",
-    "rpm": 5,
-    "tpm": 100000,
-    "rpd": 20,
+    "model_id": "gemini-3.5-flash-lite",
+    "rpm": 15,
+    "tpm": 250000,
+    "rpd": 500,
     "other_daily_reserved": 0,
-    "source": "AI Studio Rate limits（Peak usage trends），截圖：2026秋季成果/W01/組長/下午4.29 2026-9-28的影像.png",
-    "checked_at": "2026-09-28T15:50+08:00",
-    "how_to_fill": "組長登入 Google AI Studio → 該 project 的 Rate limits 頁，記下選定 model 的 RPM/TPM/RPD 與截圖日期；限額按 project 計，不按 API key。",
+    "tpm_note": "RPM/TPM 由 AI Studio 圖表紅線位置讀取（RPM 在 10 與 20 正中、TPM 在 200K 與 300K 正中）；RPD 500 紅線落在刻度上。精確值待游標確認。",
+    "source": "AI Studio Rate limits（Peak usage trends），組長 2026-09-28 對話截圖；截圖檔待存 2026秋季成果/W01/組長/",
+    "checked_at": "2026-09-28",
+    "selected_by": "組長 2026-09-28，條件：W04–W05 以 10 個開發案驗證工具選擇品質，10/23 凍結前定案；不足則退回 gemini-3.6-flash 並縮減實驗",
     "api_key_present_on_this_mac": true,
-    "desensitised_live_test": "not_run (no GEMINI_API_KEY in .env on this Mac)"
+    "desensitised_live_test": "not_run"
   },
   "daily_research_jobs_J": {
     "formula": "min(6, floor(max(0, floor(0.8 * RPD) - other_daily_reserved) / 8))",
-    "value": 2,
-    "reason": "RPD 20 → floor(0.8×20)=16 → floor(16/8)=2"
+    "value": 6,
+    "reason": "RPD 500 → floor(0.8×500)=400 → floor(400/8)=50 → min(6, 50)=6"
   },
   "total_budget_900": {
     "total_model_sends": 900,
     "source": "handbook ch.08 風險與既定處置：W01 用 900 次含整合/前瞻/展示的總預算與 J 估算日數",
     "draft_allocation_pending_lead_approval": {
-      "formal_experiment": {
+      "experiment_dev": {
+        "sends": 240,
+        "basis": "ch.06：10 開發案 × 3 模式 × 8"
+      },
+      "experiment_holdout": {
         "sends": 480,
-        "basis": "60 run × 8 次上限（最壞情況）"
+        "basis": "ch.06：20 保留案 × 3 模式 × 8"
       },
       "forward_observations": {
         "sends": 72,
-        "basis": "9 份 × 8 次上限"
+        "basis": "9 份 × 8"
       },
-      "integration_dev_demo_reserve": {
-        "sends": 348,
-        "basis": "900 − 480 − 72"
+      "live_checks_demo_reserve": {
+        "sends": 108,
+        "basis": "900 − 720 − 72"
       }
     },
-    "days_needed_at_J": "ceil(900 / (8 × 2)) = 57 days at J=2",
-    "examples_if_verified": {
-      "J=1": 113,
-      "J=3": 38,
-      "J=6": 19
-    }
+    "days_needed_at_J": "ceil(900 / (8 × 6)) = 19 days at J=6"
   },
   "google_ai_pro_benefit": {
     "counted": false,
@@ -65,5 +65,31 @@
     "backup": null,
     "checked_at": null,
     "how_to_fill": "Supabase Dashboard → Project Settings → Usage / Billing；到 80% 停止新增並通知，不自動刪正式資料。"
-  }
+  },
+  "gemini_alternatives_checked": [
+    {
+      "model_id": "gemini-3.6-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "J": 2,
+      "source": "截圖 2026秋季成果/W01/組長/下午4.29 2026-9-28的影像.png（組長原填 TPM 100000，圖表紅線約 250K）"
+    },
+    {
+      "model_id": "gemini-3.5-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "J": 2,
+      "source": "組長 2026-09-28 對話截圖"
+    },
+    {
+      "model_id": "gemini-3.1-flash-lite",
+      "rpm": 15,
+      "tpm": 250000,
+      "rpd": 500,
+      "J": 6,
+      "source": "組長 2026-09-28 對話截圖"
+    }
+  ]
 }

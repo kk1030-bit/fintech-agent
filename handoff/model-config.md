@@ -22,9 +22,9 @@
 
 | 設定 | 狀態 | 說明 |
 |---|---|---|
-| `GEMINI_MODEL` | **`gemini-3.6-flash`**（組長 2026-09-28 選定） | 正式版、支援 function calling、免費層級、thinking 可設 minimal |
-| `GEMINI_API_KEY` | 本機未設定 | 只放後端 `.env`／Render env，不進 repo、不給 C/E |
-| quota | RPM 5／TPM 100,000／RPD 20（AI Studio，2026-09-28 15:50）→ J=2 | `handoff/quota-baseline.json`；截圖待補 |
+| `GEMINI_MODEL` | **`gemini-3.5-flash-lite`**（組長 2026-09-28 選定，有條件） | 正式版、支援 function calling、免費層級、thinking 可設 minimal；RPD 500。W04–W05 用 10 個開發案驗證工具選擇品質，10/23 前定案；不足退回 `gemini-3.6-flash` |
+| `GEMINI_API_KEY` | 本機已設定（只檢查有值） | 只放後端 `.env`／Render env，不進 repo、不給 C/E |
+| quota | RPM 15／TPM 約 250,000／RPD 500 → J=6 | `handoff/quota-baseline.json`；截圖待存檔 |
 | thinking 等級 | 預設 minimal | 若 live 測試發現 minimal 選工具品質不足，再由組長核准改 low |
 
 ## token 估算方式
@@ -36,4 +36,15 @@
 - 來源：ai.google.dev/gemini-api/docs 的 models、pricing、thinking、rate-limits 頁。
 - 3.8/3.7 Flash thinking 最低只能 low，會吃掉 1,500 輸出上限，不選；preview 版可能下架，不選；2.5 系列對新 project 限制存取。
 - 免費層級資料可能用於改進 Google 產品：只送公開研究素材與合成 fixture。
-- RPM 5 → 排程器 80% 為每分鐘 4 次；RPD 20 → 每日 16 次、J=2；900 次總預算需約 57 天，需組長重新評估配分（見 quota-baseline.json）。
+- 額度比較（AI Studio，2026-09-28）：
+
+| model | RPM | TPM | RPD | J | 900 次需天數 |
+|---|---|---|---|---|---|
+| gemini-3.6-flash | 5 | ~250K | 20 | 2 | 57 |
+| gemini-3.5-flash | 5 | ~250K | 20 | 2 | 57 |
+| **gemini-3.5-flash-lite** | 15 | ~250K | 500 | 6 | 19 |
+| gemini-3.1-flash-lite | 15 | ~250K | 500 | 6 | 19 |
+
+- 第 06 章實驗為 30 案 × 3 模式 = 90 job（上限 720 次）。J=2 需 45 天，W11 前做不完；J=6 約 15 個可執行日，符合手冊排程。
+- 實驗比較同一 model 下的三模式，換 Lite 不影響研究設計；風險是 Lite 不會依證據換工具，使 E01 不過。3.1 Flash-Lite 較舊且未查到 thinking 等級，故選 3.5。
+- 依第 08 章，換 model 須經組長核准並通過 10 個開發案；正式實驗分版本，不混表。

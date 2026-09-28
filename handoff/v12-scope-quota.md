@@ -28,13 +28,13 @@
 - 可開工則 **11/06** 前完成；逾期轉後續版本，不挪用正式實驗、PDF 或 12/11 定稿時段。
 - 不做 3D、全市場或自動挖供應鏈；無核准來源不畫線（B 的 `graph-source-register.csv` 已列 20 點／30 線、0 LLM）。
 
-## 4. 配額與帳戶（**未核實，不填猜測值**）
+## 4. 配額與帳戶（Gemini 已由組長核實 2026-09-28；Render/Supabase 未核實）
 
 | 項目 | 現況 | 需要誰做什麼 |
 |---|---|---|
-| Gemini model / RPM / TPM / RPD | 未知；本機無 `GEMINI_API_KEY` | 組長：AI Studio 選定 model，記下該 project 限額與截圖日期，填 `quota-baseline.json` |
-| 每日研究上限 J | **0**（RPD 未知） | 核實後由公式自動算：`min(6, floor(max(0, floor(0.8×RPD) − 其他保留) / 8))` |
-| 900 次總預算 | 草案：正式實驗 480（60 run×8）、前瞻 72（9×8）、整合/開發/展示 348 | 組長核准配分；J 確定後天數＝ceil(900/(8J)) |
+| Gemini model / RPM / TPM / RPD | `gemini-3.5-flash-lite`：15 / ~250K / 500（有條件選定，見 model-config.md） | 截圖存檔；TPM 精確值待確認 |
+| 每日研究上限 J | **6** | `min(6, floor(max(0, floor(0.8×RPD) − 其他保留) / 8))` |
+| 900 次總預算 | 草案：實驗開發 240、實驗保留 480、前瞻 72、live 檢查／展示 108；J=6 約 19 天 | 組長核准配分 |
 | 學生／AI Pro 福利 | 不計入可用額度 | 組長另行確認資格與啟用，與 API quota 分開記錄 |
 | Render | repo 內 `plan: free`（512MB）；2GB 為**計畫**，未開通、未購買 | 組長於 Render 後台確認方案與月費；購買須組長另行決定 |
 | Supabase DB / Storage | 方案、用量、上限皆未知 | 組長：Dashboard → Usage 記錄；80% 停止新增並通知 |
