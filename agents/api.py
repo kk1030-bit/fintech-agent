@@ -43,8 +43,8 @@ def require_token(view):
     @wraps(view)
     def wrapper(*args, **kwargs):
         expected = current_app.config.get("RESEARCH_API_TOKEN") or os.getenv("RESEARCH_API_TOKEN")
-        supplied = request.headers.get("Authorization", "")
-        if not expected or not hmac.compare_digest(supplied, f"Bearer {expected}"):
+        supplied = request.headers.get("Authorization", "").encode("utf-8", "surrogateescape")
+        if not expected or not hmac.compare_digest(supplied, f"Bearer {expected}".encode()):
             return jsonify({"ok": False, "error": "unauthorized"}), 401
         return view(*args, **kwargs)
 
@@ -58,13 +58,18 @@ def public_job(job: dict) -> dict:
 @bp.post("/jobs")
 @require_token
 def create_job():
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"ok": False, "error": "請求內容需為 JSON 物件"}), 400
     payload.setdefault("idempotency_key", request.headers.get("Idempotency-Key"))
     try:
         req = validate_job_request(payload)
     except ContractError as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
-    job, created = get_store().create_job(req, os.getenv("GEMINI_MODEL") or None)
+    try:
+        job, created = get_store().create_job(req, os.getenv("GEMINI_MODEL") or None)
+    except ContractError as exc:  # idempotency_key reused with different content
+        return jsonify({"ok": False, "error": str(exc)}), 409
     return jsonify({"ok": True, "created": created, "job": public_job(job)}), 202 if created else 200
 
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 import time
 from typing import Any, Callable, Protocol
 
+from .budget import BudgetExceeded
 from .store import HEARTBEAT_SECONDS, POLL_SECONDS, JobStore, StaleLeaseError
 
 
@@ -57,13 +58,24 @@ def run_once(store: JobStore, worker_id: str, handler: Handler = mock_handler) -
     job, token = claimed
     lease = _Lease(store, worker_id, job, token)
     try:
-        result = handler(lease)
+        try:
+            result = handler(lease)
+        except BudgetExceeded as exc:
+            # A budget stop is an outcome, not a crash: paused_quota / timed_out / insufficient_evidence.
+            result = {"status": exc.job_status, "stop_reason": exc.reason, "stop_detail": str(exc)[:500]}
+            if exc.job_status == "paused_quota":
+                if exc.wait_seconds is not None:  # quota_unknown has none: resumes only via store.requeue
+                    result["resume_after"] = store.clock() + exc.wait_seconds
+            else:
+                result["stage"] = "finished"
+        except StaleLeaseError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - persist any failure instead of losing the job
+            result = {"status": "failed", "stage": "finished", "stop_reason": f"worker_error: {exc}"[:500]}
+        return lease.save(result)
     except StaleLeaseError:
-        # Another worker owns the job now; drop our results silently.
+        # Another worker owns the job now (our lease expired); drop our results.
         return None
-    except Exception as exc:  # noqa: BLE001 - persist any failure instead of losing the job
-        return lease.save({"status": "failed", "stage": "finished", "stop_reason": f"worker_error: {exc}"[:500]})
-    return lease.save(result)
 
 
 def run_forever(store: JobStore, worker_id: str, handler: Handler = mock_handler) -> None:  # pragma: no cover

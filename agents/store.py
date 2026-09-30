@@ -21,7 +21,10 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from .contract import TERMINAL_STATUSES, new_job_record, utc_now_iso
+from .contract import TERMINAL_STATUSES, ContractError, new_job_record, utc_now_iso
+
+# Fields that must match when an idempotency_key is reused.
+IDEMPOTENT_FIELDS = ("ticker", "mode", "cutoff_at", "source_snapshot_id", "question_version")
 
 LEASE_SECONDS = 60
 HEARTBEAT_SECONDS = 20
@@ -94,7 +97,11 @@ class JobStore:
                 (request["idempotency_key"],),
             ).fetchone()
             if existing:
-                return json.loads(existing["data"]), False
+                job = json.loads(existing["data"])
+                diff = [k for k in IDEMPOTENT_FIELDS if job.get(k) != request.get(k)]
+                if diff:
+                    raise ContractError(f"idempotency_key 已用於不同內容的 job（{', '.join(diff)} 不同）")
+                return job, False
             job = new_job_record(request, model_id)
             self._conn.execute(
                 "insert into research_jobs (job_id, idempotency_key, status, data, created_at, updated_at)"
@@ -112,8 +119,9 @@ class JobStore:
     def claim_next(self, worker_id: str) -> tuple[dict[str, Any], int] | None:
         """Lease the oldest runnable job, respecting the one-active-job rule.
 
-        A running job whose lease expired (worker crashed) is reclaimable; its
-        stored checkpoint and budget counters are kept, never reset.
+        Runnable: queued; running with an expired lease (worker crashed); or
+        paused_quota whose resume_after has passed. Stored checkpoint and
+        budget counters are kept, never reset.
         """
 
         now = self.clock()
@@ -130,16 +138,18 @@ class JobStore:
                 row = self._conn.execute(
                     "select job_id, lease_token, data from research_jobs"
                     " where status = 'queued' or (status = 'running' and lease_expires_at <= ?)"
+                    " or (status = 'paused_quota' and json_extract(data, '$.resume_after') <= ?)"
                     " order by created_at, rowid limit 1",
-                    (now,),
+                    (now, now),
                 ).fetchone()
                 if not row:
                     self._conn.execute("commit")
                     return None
                 token = row["lease_token"] + 1
                 job = json.loads(row["data"])
-                recovered = job["status"] == "running"
+                recovered = job["status"] in ("running", "paused_quota")
                 job["status"] = "running"
+                job.pop("resume_after", None)
                 job["updated_at"] = utc_now_iso()
                 self._conn.execute(
                     "update research_jobs set status = 'running', data = ?, lease_owner = ?, lease_token = ?,"
@@ -195,6 +205,26 @@ class JobStore:
             )
             return job
 
+    def requeue(self, job_id: str) -> dict[str, Any]:
+        """Manually put a paused_quota job back in the queue (e.g. after quota is verified)."""
+
+        with self._lock:
+            row = self._conn.execute("select data from research_jobs where job_id = ?", (job_id,)).fetchone()
+            if row is None:
+                raise KeyError(job_id)
+            job = json.loads(row["data"])
+            if job["status"] != "paused_quota":
+                raise ValueError(f"job {job_id} 狀態為 {job['status']}，只有 paused_quota 能重新排隊")
+            job["status"] = "queued"
+            job.pop("resume_after", None)
+            job["updated_at"] = utc_now_iso()
+            self._conn.execute(
+                "update research_jobs set status = 'queued', data = ?, updated_at = ? where job_id = ?",
+                (json.dumps(job, ensure_ascii=False), job["updated_at"], job_id),
+            )
+            self._append_event_locked(job_id, "system", "requeued", None, {})
+            return job
+
     # ----- events ---------------------------------------------------------
     def _append_event_locked(self, job_id: str, role: str | None, event_type: str,
                              tool_name: str | None, detail: dict[str, Any]) -> int:
@@ -243,6 +273,12 @@ class JobStore:
 
     def requests_on_day(self, day_key: str) -> int:
         return self._conn.execute("select count(*) from model_usage where day_key = ?", (day_key,)).fetchone()[0]
+
+    def jobs_on_day(self, day_key: str) -> set[str]:
+        rows = self._conn.execute(
+            "select distinct job_id from model_usage where day_key = ? and job_id is not null", (day_key,)
+        ).fetchall()
+        return {r[0] for r in rows}
 
     def usage_since(self, since: float) -> tuple[int, int]:
         """(requests, tokens) sent since `since`; unknown totals count the reservation."""

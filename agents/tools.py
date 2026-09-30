@@ -13,7 +13,9 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime
 from typing import Any, Callable
+from zoneinfo import ZoneInfo
 
 from .contract import COMPARISON_ONLY_TICKERS, RESEARCH_TICKERS
 
@@ -120,13 +122,38 @@ ROLE_TOOLS = {
     "reviewer": ("read_evidence", "get_financial_snapshot", "get_macro_snapshot", "calculate_metrics"),
 }
 
-# Strings that look like URLs, paths, SQL or shell must never reach a tool.
-_FORBIDDEN = re.compile(r"(https?://|file:|\.\./|^/|\\\\|;\s*(drop|delete|update|insert)\b|\bselect\b.+\bfrom\b|[`$|&]\()",
-                        re.IGNORECASE)
+# Free text (query, labels) must not look like a URL, file path, SQL or shell fragment.
+_FORBIDDEN = re.compile(
+    r"([a-z][a-z0-9+.-]*://|\bwww\.|\bfile:|\.\.[/\\]|(^|\s)(/[\w.-]|~/)|[a-z]:\\|\\\\"
+    r"|[`;|]|\$\(|&&|--|/\*|\bunion\s+select\b|\bdrop\s+table\b|\bselect\s+\*|\bdelete\s+from\b|\binsert\s+into\b)",
+    re.IGNORECASE,
+)
+# Identifiers (evidence ids, snapshot ids, series ids, method versions) must be plain tokens.
+_ID = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TW = ZoneInfo("Asia/Taipei")
 
 
 class ToolInputError(ValueError):
     pass
+
+
+def _parse_time(label: str, value: Any) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ToolInputError(f"{label} 需為 ISO-8601 時間") from exc
+    if parsed.tzinfo is None:
+        raise ToolInputError(f"{label} 需含時區")
+    return parsed
+
+
+def _check_not_after_cutoff(label: str, value: Any, job_cutoff: str | None) -> None:
+    """No look-ahead: tool times may never be later than the job's cutoff_at."""
+
+    when = _parse_time(label, value)
+    if job_cutoff and when > _parse_time("job.cutoff_at", job_cutoff):
+        raise ToolInputError(f"{label}={value} 晚於本 job 的 cutoff {job_cutoff}，不可使用之後的資料")
 
 
 def args_hash(args: dict[str, Any]) -> str:
@@ -169,13 +196,13 @@ def _check_type(name: str, key: str, value: Any, spec: dict[str, Any]) -> None:
             raise ToolInputError(f"{name}.{key} 至少 {spec['minItems']} 項")
 
 
-def _validate_peer_comparison(values: dict[str, Any]) -> None:
+def _validate_peer_comparison(values: dict[str, Any], job_cutoff: str | None) -> None:
     subject = values.get("subject")
     comparators = values.get("comparators") or []
     if subject != PEER_SUBJECT:
         raise ToolInputError(f"peer_comparison 主體只限 {PEER_SUBJECT}")
-    if not isinstance(comparators, list) or not comparators:
-        raise ToolInputError("peer_comparison.comparators 必填")
+    if not isinstance(comparators, list) or not comparators or not all(isinstance(c, str) for c in comparators):
+        raise ToolInputError("peer_comparison.comparators 必填，且為股票代號字串陣列")
     if len(set(comparators)) != len(comparators):
         raise ToolInputError("peer_comparison.comparators 不可重複")
     if 1 + len(comparators) > MAX_PEER_COMPANIES:
@@ -186,16 +213,31 @@ def _validate_peer_comparison(values: dict[str, Any]) -> None:
     for key in ("price_as_of", "cutoff", "method_version"):
         if not values.get(key):
             raise ToolInputError(f"peer_comparison.{key} 必填（同一報價基準日）")
+    if not isinstance(values["method_version"], str) or not _ID.match(values["method_version"]):
+        raise ToolInputError("peer_comparison.method_version 格式錯誤")
+    _check_not_after_cutoff("peer_comparison.cutoff", values["cutoff"], job_cutoff)
+    price_as_of = str(values["price_as_of"])
+    if not _DATE.match(price_as_of):
+        raise ToolInputError("peer_comparison.price_as_of 需為 YYYY-MM-DD")
+    limit = _parse_time("cutoff", job_cutoff or values["cutoff"]).astimezone(TW).date()
+    if datetime.fromisoformat(price_as_of).date() > limit:
+        raise ToolInputError(f"peer_comparison.price_as_of={price_as_of} 晚於 cutoff 當日")
     metrics = values.get("metrics") or []
     bad_metrics = [m for m in metrics if m not in PEER_METRICS]
     if not metrics or bad_metrics:
         raise ToolInputError(f"peer_comparison.metrics 只限 {PEER_METRICS}")
-    if not isinstance(values.get("snapshot_ids"), dict) or set(values["snapshot_ids"]) != {subject, *comparators}:
+    snaps = values.get("snapshot_ids")
+    if not isinstance(snaps, dict) or set(snaps) != {subject, *comparators}:
         raise ToolInputError("peer_comparison.snapshot_ids 需為每家公司各一個快照 id")
+    if not all(isinstance(v, str) and _ID.match(v) for v in snaps.values()):
+        raise ToolInputError("peer_comparison.snapshot_ids 的值格式錯誤")
 
 
-def validate_tool_call(role: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
-    """Validate a model-proposed call. Raises ToolInputError; returns the args unchanged."""
+def validate_tool_call(role: str, name: str, args: dict[str, Any], job_cutoff: str | None = None) -> dict[str, Any]:
+    """Validate a model-proposed call. Raises ToolInputError; returns the args unchanged.
+
+    `job_cutoff` is the job's cutoff_at; any tool time after it is refused (no look-ahead).
+    """
 
     if name not in TOOL_NAMES:
         raise ToolInputError(f"未知工具 {name}；本系統只有六個工具")
@@ -216,12 +258,17 @@ def validate_tool_call(role: str, name: str, args: dict[str, Any]) -> dict[str, 
     for s in _walk_strings(args):
         if _FORBIDDEN.search(s):
             raise ToolInputError(f"{name} 參數含 URL/路徑/SQL/指令字樣，拒絕執行")
+    for key in ("cutoff", "end_at"):
+        if key in args:
+            _check_not_after_cutoff(f"{name}.{key}", args[key], job_cutoff)
+    if name == "read_evidence" and not _ID.match(args["evidence_version_id"]):
+        raise ToolInputError("evidence_version_id 格式錯誤")
     if name == "get_macro_snapshot":
-        bad = [s for s in args["series_ids"] if s not in MACRO_SERIES_WHITELIST]
+        bad = [s for s in args["series_ids"] if not isinstance(s, str) or s not in MACRO_SERIES_WHITELIST]
         if bad:
             raise ToolInputError(f"series {bad} 不在已核准白名單（白名單待 W02 與 B 鎖定）")
     if name == "calculate_metrics" and args["operation"] == "peer_comparison":
-        _validate_peer_comparison(args["values"])
+        _validate_peer_comparison(args["values"], job_cutoff)
     return args
 
 
@@ -237,17 +284,24 @@ def register_tool(name: str, impl: ToolImpl) -> None:
     _REGISTRY[name] = impl
 
 
-def dispatch(role: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
-    """Validate then run. Validation failures come back as a fixed error result."""
+def dispatch(role: str, name: str, args: dict[str, Any], job_cutoff: str | None = None) -> dict[str, Any]:
+    """Validate then run. Validation failures and tool crashes come back as fixed results
+    the model can react to (retry another tool or stop), never as an exception."""
 
     try:
-        validate_tool_call(role, name, args)
+        validate_tool_call(role, name, args, job_cutoff)
     except ToolInputError as exc:
         return {"status": "invalid_input", "tool": name, "reason": str(exc), "data": None}
     impl = _REGISTRY.get(name)
     if impl is None:
         return {"status": "no_data", "tool": name, "reason": "工具實作待 W03-B 註冊", "data": None}
-    return impl(args)
+    try:
+        result = impl(args)
+    except Exception as exc:  # noqa: BLE001 - a broken tool must not crash the job
+        return {"status": "tool_error", "tool": name, "reason": f"{type(exc).__name__}: {exc}"[:300], "data": None}
+    if not isinstance(result, dict) or "status" not in result:
+        return {"status": "tool_error", "tool": name, "reason": "工具回傳格式錯誤", "data": None}
+    return result
 
 
 def contract_document() -> dict[str, Any]:
@@ -271,6 +325,7 @@ def contract_document() -> dict[str, Any]:
         "fixed_result_shapes": {
             "invalid_input": {"status": "invalid_input", "tool": "str", "reason": "str", "data": None},
             "no_data": {"status": "no_data", "tool": "str", "reason": "str", "data": None},
+            "tool_error": {"status": "tool_error", "tool": "str", "reason": "str", "data": None},
         },
         "declarations": TOOL_DECLARATIONS,
         "implementation_status": {name: ("registered" if name in _REGISTRY else "pending_W03-B") for name in TOOL_NAMES},

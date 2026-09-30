@@ -65,6 +65,12 @@
       "tool": "str",
       "reason": "str",
       "data": null
+    },
+    "tool_error": {
+      "status": "tool_error",
+      "tool": "str",
+      "reason": "str",
+      "data": null
     }
   },
   "declarations": [

@@ -43,3 +43,15 @@ Thumbs.db
 !docs/**/*.csv
 # 本機 job 佇列資料庫
 *.sqlite3
+# 手冊指定的組員交付路徑（json/csv 必須進版控，否則會被上面的 *.json / *.csv 靜默略過）
+!data/**/*.json
+!data/**/*.csv
+!fixtures/**/*.json
+!evaluation/**/*.json
+!evaluation/**/*.csv
+!agent/**/*.json
+!research/**/*.json
+!release/**/*.json
+!ui/**/*.json
+!publication/**/*.json
+!operations/**/*.json

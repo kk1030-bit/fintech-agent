@@ -31,5 +31,5 @@ python3 -m venv .venv
 |---|---|---|
 | Supabase 遷移演練＋rollback | 獨立測試專案（非正式庫） | 未執行：尚無測試專案 |
 | Supabase 版 JobStore | 遷移演練通過 | 未實作 |
-| Gemini live 往返 | `GEMINI_API_KEY`、`GEMINI_MODEL`、`quota-baseline.json` 已核實 | 未執行：本機無 key |
+| Gemini live 往返 | key、model、quota 已設定 | 已執行 2026-09-28（3 次），見 quota-test-log.md |
 | gunicorn＋worker 同 instance | W08 | 未執行 |

@@ -24,6 +24,8 @@ from .store import JobStore
 from .tools import TOOL_DECLARATIONS, ROLE_TOOLS, args_hash, dispatch
 
 RETRYABLE_CODES = {408, 429, 500, 502, 503, 504}
+HTTP_TIMEOUT_MS = 45_000        # below the 60 s lease, so a heartbeat before each send keeps the lease alive
+MAX_RETRY_SLEEP = 20.0          # longer Retry-After → pause the job instead of holding the lease
 
 # Gemini 3 thinking is set by thinking_level and cannot be turned off.
 # Allowed levels per model, from ai.google.dev/gemini-api/docs/thinking (checked 2026-09-28).
@@ -48,7 +50,7 @@ def make_client(api_key: str | None = None):  # pragma: no cover - needs a real 
         raise RuntimeError("GEMINI_API_KEY 未設定；只能執行 mock 測試。")
     return genai.Client(
         api_key=key,
-        http_options=types.HttpOptions(timeout=60_000, retry_options=types.HttpRetryOptions(attempts=1)),
+        http_options=types.HttpOptions(timeout=HTTP_TIMEOUT_MS, retry_options=types.HttpRetryOptions(attempts=1)),
     )
 
 
@@ -78,7 +80,7 @@ def _retry_after_seconds(exc: Exception) -> float | None:
 class GeminiAdapter:
     def __init__(self, client: Any, model_id: str, gate: BudgetGate, *, prompt_version: str,
                  thinking_level: str = DEFAULT_THINKING_LEVEL, sleep: Callable[[float], None] = time.sleep,
-                 monotonic: Callable[[], float] = time.monotonic):
+                 monotonic: Callable[[], float] = time.monotonic, heartbeat: Callable[[], None] = lambda: None):
         if not model_id:
             raise ValueError("GEMINI_MODEL 未設定；model id 由組長於 handoff/model-config.md 鎖定。")
         if gate.quota.model_id and gate.quota.model_id != model_id:
@@ -88,7 +90,7 @@ class GeminiAdapter:
             raise ValueError(f"{model_id} 的 thinking_level 只能是 {allowed}，收到 {thinking_level}")
         self.client, self.model_id, self.gate = client, model_id, gate
         self.prompt_version, self.thinking_level = prompt_version, thinking_level
-        self.sleep, self.monotonic = sleep, monotonic
+        self.sleep, self.monotonic, self.heartbeat = sleep, monotonic, heartbeat
 
     @property
     def store(self) -> JobStore:
@@ -119,6 +121,7 @@ class GeminiAdapter:
     def send(self, role: str, contents: list[Any], system_instruction: str) -> Any:
         """One logical request = up to 1 + max_retries HTTP sends, all counted."""
 
+        import httpx
         from google.genai import errors
 
         config = self.build_config(role, system_instruction)
@@ -131,25 +134,33 @@ class GeminiAdapter:
         )
         prompt_hash = _hash(prompt_text)
         for attempt in range(self.gate.limits.max_retries + 1):
+            self.heartbeat()  # renew the 60 s lease before a send that may take up to 45 s
             res = self.gate.reserve_call(role, prompt_text, prompt_hash, prompt_version=self.prompt_version)
             started = self.monotonic()
             try:
                 resp = self.client.models.generate_content(model=self.model_id, contents=contents, config=config)
-            except errors.APIError as exc:
-                self.gate.settle(res, f"error_{exc.code}", None)
+            except (errors.APIError, httpx.TimeoutException, httpx.TransportError) as exc:
+                code = exc.code if isinstance(exc, errors.APIError) else 408
+                self.gate.settle(res, f"error_{code}", None)
                 self.store.append_event(self.job_id, role, "model_error", detail={
-                    "call_number": res.call_number, "code": exc.code, "model_id": self.model_id,
-                    "prompt_version": self.prompt_version, "prompt_hash": prompt_hash,
+                    "call_number": res.call_number, "code": code, "error": type(exc).__name__,
+                    "model_id": self.model_id, "prompt_version": self.prompt_version, "prompt_hash": prompt_hash,
                 })
                 self.gate.add_active_time(self.monotonic() - started)
-                if exc.code in RETRYABLE_CODES and attempt < self.gate.limits.max_retries:
-                    wait = _retry_after_seconds(exc) or 2.0
+                self.heartbeat()
+                retryable = code in RETRYABLE_CODES and attempt < self.gate.limits.max_retries
+                wait = (_retry_after_seconds(exc) or 2.0) if retryable else 0.0
+                if retryable and wait <= MAX_RETRY_SLEEP and self.gate.can_send_again():
                     self.sleep(wait + random.uniform(0, 1))
                     continue
-                if exc.code == 429:
-                    raise BudgetExceeded("provider_429", "供應商回 429，重試後仍失敗；保存 paused_quota") from exc
+                if code == 429 or (retryable and wait > MAX_RETRY_SLEEP):
+                    raise BudgetExceeded("provider_429", "供應商限流，重試後仍失敗；保存 paused_quota",
+                                         wait_seconds=max(wait, 60.0)) from exc
                 raise
-            self.gate.add_active_time(self.monotonic() - started)
+            except Exception:
+                # Unknown failure after the send: keep the reservation as observed, never refund.
+                self.gate.settle(res, "error_unknown", None)
+                raise
             usage = _usage_dict(resp)
             self.gate.settle(res, "ok", usage.get("total_token_count"))
             candidate = (getattr(resp, "candidates", None) or [None])[0]
@@ -164,6 +175,9 @@ class GeminiAdapter:
                 "finish_reason": str(getattr(candidate, "finish_reason", None)),
                 "function_calls": [fc.name for fc in (resp.function_calls or [])],
             })
+            self.heartbeat()
+            # Record time last: going over 180 s stops the job, but this send is already accounted for.
+            self.gate.add_active_time(self.monotonic() - started)
             return resp
         raise AssertionError("unreachable")
 
@@ -184,7 +198,7 @@ class GeminiAdapter:
                 args = dict(call.args or {})
                 h = args_hash(args)
                 self.gate.register_tool_call(call.name, h)
-                result = dispatch(role, call.name, args)
+                result = dispatch(role, call.name, args, job_cutoff=self.gate.job.get("cutoff_at"))
                 self.store.append_event(self.job_id, role, "tool_call", call.name, {
                     "args_hash": h,
                     "output_hash": _hash(json.dumps(result, sort_keys=True, ensure_ascii=False))[:16],

@@ -2,7 +2,7 @@
 
 import pytest
 
-from agents.budget import BudgetExceeded, BudgetGate, ProjectQuota, daily_job_limit, estimate_tokens
+from agents.budget import BudgetExceeded, BudgetGate, BudgetLimits, ProjectQuota, daily_job_limit, estimate_tokens
 from agents.contract import validate_job_request
 from agents.tools import TOOL_NAMES, contract_document, dispatch, validate_tool_call, ToolInputError
 from conftest import job_request
@@ -85,12 +85,43 @@ def test_estimate_is_conservative_for_cjk_and_ascii():
 
 
 def test_project_daily_quota_uses_80_percent(store):
-    gate = make_gate(store, quota=ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=5), stage="revision")
-    for _ in range(4):  # floor(0.8*5) = 4
+    gate = make_gate(store, quota=ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=10), stage="revision")
+    gate.limits = BudgetLimits(max_calls=20)
+    for _ in range(8):  # floor(0.8*10) = 8
         gate.settle(gate.reserve_call("reviewer", "x", "h"), "ok", 10)
     with pytest.raises(BudgetExceeded) as err:
         gate.reserve_call("reviewer", "x", "h")
     assert err.value.reason == "daily_quota" and err.value.job_status == "paused_quota"
+    assert 0 < err.value.wait_seconds <= 86400  # resumes after midnight Pacific
+
+
+def test_daily_job_limit_J_is_enforced(store):
+    quota = ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=10)  # J = floor(8/8) = 1
+    first = make_gate(store, quota=quota)
+    first.settle(first.reserve_call("researcher", "x", "h"), "ok", 10)
+    first.persist({"status": "succeeded"})
+    second_job, _ = store.create_job(validate_job_request(job_request(idempotency_key="j2", ticker="2317")), "test-model")
+    _, token = store.claim_next("w2")
+    second = BudgetGate(store=store, job=store.get_job(second_job["job_id"]), quota=quota,
+                        persist=lambda ch: store.update_job(second_job["job_id"], "w2", token, ch))
+    with pytest.raises(BudgetExceeded) as err:
+        second.reserve_call("researcher", "x", "h")
+    assert err.value.reason == "daily_quota" and "J=1" in str(err.value)
+    # a job that already sent today may continue
+    BudgetGate(store=store, job=first.job, persist=lambda ch: ch, quota=quota).check_project_quota(10)
+
+
+def test_rate_limit_pauses_instead_of_ending_the_job():
+    assert BudgetExceeded("rate_limited", "x", wait_seconds=60).job_status == "paused_quota"
+
+
+def test_no_send_after_active_time_is_used_up(store):
+    gate = make_gate(store)
+    gate.persist({"active_seconds": 180.0})
+    gate.job = store.get_job(gate.job["job_id"])
+    with pytest.raises(BudgetExceeded) as err:
+        gate.reserve_call("researcher", "x", "h")
+    assert err.value.reason == "active_time" and gate.job["calls_used"] == 0
 
 
 def test_rpm_headroom(store):

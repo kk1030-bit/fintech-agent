@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -49,7 +49,7 @@ class BudgetExceeded(RuntimeError):
     """Raised instead of sending. `reason` becomes the job stop_reason."""
 
     # reasons that should park the job as paused_quota instead of failing it
-    PAUSE_REASONS = {"daily_quota", "quota_unknown", "provider_429"}
+    PAUSE_REASONS = {"daily_quota", "quota_unknown", "provider_429", "rate_limited"}
 
     def __init__(self, reason: str, message: str, wait_seconds: float | None = None):
         super().__init__(f"{reason}: {message}")
@@ -74,6 +74,14 @@ def estimate_tokens(text: str) -> int:
 
     non_ascii = sum(1 for ch in text if ord(ch) > 127)
     return non_ascii + math.ceil((len(text) - non_ascii) / 2)
+
+
+def seconds_until_quota_reset(now: float) -> float:
+    """Seconds until the next midnight Pacific time, when Gemini RPD resets."""
+
+    local = datetime.fromtimestamp(now, QUOTA_DAY_TZ)
+    reset = (local + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return max(1.0, reset.timestamp() - now)
 
 
 def daily_job_limit(rpd: int | None, other_reserved: int = 0, calls_per_job: int = 8) -> int:
@@ -143,7 +151,14 @@ class BudgetGate:
         day_key = datetime.fromtimestamp(now, QUOTA_DAY_TZ).date().isoformat()
         day_cap = math.floor(HEADROOM * q.rpd) - q.other_daily_reserved
         if self.store.requests_on_day(day_key) >= day_cap:
-            raise BudgetExceeded("daily_quota", f"今日（太平洋時間 {day_key}）已達 80% RPD 上限 {day_cap}")
+            raise BudgetExceeded("daily_quota", f"今日（太平洋時間 {day_key}）已達 80% RPD 上限 {day_cap}",
+                                 wait_seconds=seconds_until_quota_reset(now))
+        # J: a job that has not sent anything today may only start if fewer than J jobs have.
+        jobs_today = self.store.jobs_on_day(day_key)
+        j_limit = daily_job_limit(q.rpd, q.other_daily_reserved)  # handbook formula divides by 8
+        if self.job["job_id"] not in jobs_today and len(jobs_today) >= j_limit:
+            raise BudgetExceeded("daily_quota", f"今日已有 {len(jobs_today)} 個研究 job，達每日上限 J={j_limit}",
+                                 wait_seconds=seconds_until_quota_reset(now))
         req, tok = self.store.usage_since(now - 60)
         if req >= math.floor(HEADROOM * q.rpm) or tok + reserve_tokens > math.floor(HEADROOM * q.tpm):
             raise BudgetExceeded("rate_limited", "近 60 秒 RPM/TPM 已達 80%", wait_seconds=60)
@@ -152,6 +167,8 @@ class BudgetGate:
                      prompt_version: str | None = None) -> Reservation:
         lim, job = self.limits, self.job
         used = job.get("calls_used", 0)
+        if job.get("active_seconds", 0.0) >= lim.max_active_seconds:
+            raise BudgetExceeded("active_time", f"主動執行已達 {lim.max_active_seconds:.0f}s，不再發送")
         if used >= lim.max_calls:
             raise BudgetExceeded("call_limit", f"已用 {used}/{lim.max_calls} 次模型發送（含失敗與重試）")
         if role == "researcher" and job.get("stage") in ("research", "tools") and used >= lim.initial_research_calls:
@@ -174,6 +191,12 @@ class BudgetGate:
             reserved_tokens=reserve,
         )
         return Reservation(usage_id=usage_id, call_number=used + 1, reserved_tokens=reserve, role=role)
+
+    def can_send_again(self) -> bool:
+        """Cheap pre-check so a retry does not sleep when the next send would be refused anyway."""
+
+        return (self.job.get("calls_used", 0) < self.limits.max_calls
+                and self.job.get("active_seconds", 0.0) < self.limits.max_active_seconds)
 
     def settle(self, res: Reservation, outcome: str, total_tokens: int | None) -> None:
         """Replace the reservation with provider usage. Unknown usage keeps the reservation."""
