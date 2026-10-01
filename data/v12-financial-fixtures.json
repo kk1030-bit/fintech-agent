@@ -1,0 +1,117 @@
+{
+  "fixture_version": "v1.2",
+  "note": "多智能體系統標準財務驗算 Fixture（含單季/累計/時點分層、連續 4 季 TTM、同業對照數據）",
+  "companies": {
+    "2454": {
+      "company_name": "聯發科技",
+      "statement_basis": "consolidated",
+      "currency": "TWD",
+      "unit_money": "100m",
+      "unit_shares": "1m",
+      "quarters": [
+        {
+          "period": "2025Q3",
+          "period_basis": "single_quarter",
+          "revenue": 1318.1,
+          "operating_income": 238.6,
+          "net_income": 255.9,
+          "operating_cash_flow": 310.5,
+          "capital_expenditure": 42.1,
+          "free_cash_flow": 268.4,
+          "eps": 15.94,
+          "shares_outstanding": 1600.0,
+          "net_debt": -720.0,
+          "available_at": "2025-11-10T16:00:00+08:00"
+        },
+        {
+          "period": "2025Q4",
+          "period_basis": "single_quarter",
+          "revenue": 1296.5,
+          "operating_income": 247.2,
+          "net_income": 257.1,
+          "operating_cash_flow": 295.0,
+          "capital_expenditure": 45.0,
+          "free_cash_flow": 250.0,
+          "eps": 16.02,
+          "shares_outstanding": 1600.0,
+          "net_debt": -750.0,
+          "available_at": "2026-03-15T16:00:00+08:00"
+        },
+        {
+          "period": "2026Q1",
+          "period_basis": "single_quarter",
+          "revenue": 1334.6,
+          "operating_income": 321.8,
+          "net_income": 316.4,
+          "operating_cash_flow": 380.2,
+          "capital_expenditure": 38.6,
+          "free_cash_flow": 341.6,
+          "eps": 19.85,
+          "shares_outstanding": 1600.0,
+          "net_debt": -810.0,
+          "available_at": "2026-05-10T16:00:00+08:00"
+        },
+        {
+          "period": "2026Q2",
+          "period_basis": "single_quarter",
+          "revenue": 1272.7,
+          "operating_income": 249.6,
+          "net_income": 259.6,
+          "operating_cash_flow": 305.1,
+          "capital_expenditure": 41.2,
+          "free_cash_flow": 263.9,
+          "eps": 16.19,
+          "shares_outstanding": 1600.0,
+          "net_debt": -830.0,
+          "available_at": "2026-08-10T16:00:00+08:00"
+        }
+      ],
+      "ttm_summary": {
+        "as_of_period": "2026Q2",
+        "eps_ttm": 68.0,
+        "fcf_ttm": 1123.9,
+        "is_complete_4_quarters": true
+      },
+      "market_snapshot": {
+        "trade_date": "2026-09-30",
+        "close_price": 1250.0,
+        "pe_ttm": 18.38,
+        "pb_ratio": 3.85
+      }
+    },
+    "2379": {
+      "company_name": "瑞昱半導體",
+      "role": "peer",
+      "market_snapshot": {
+        "trade_date": "2026-09-30",
+        "close_price": 510.0,
+        "pe_ttm": 19.5,
+        "pb_ratio": 4.1,
+        "revenue_yoy_quarter": 0.125
+      }
+    },
+    "3034": {
+      "company_name": "聯詠科技",
+      "role": "peer",
+      "market_snapshot": {
+        "trade_date": "2026-09-30",
+        "close_price": 540.0,
+        "pe_ttm": 15.2,
+        "pb_ratio": 3.6,
+        "revenue_yoy_quarter": 0.082
+      }
+    },
+    "2330": {
+      "company_name": "台灣積體電路製造",
+      "role": "industry_reference",
+      "note": "僅作產業參照，嚴禁計入 2454 同業平均計算",
+      "market_snapshot": {
+        "trade_date": "2026-09-30",
+        "close_price": 1005.0,
+        "pe_ttm": 26.31,
+        "pb_ratio": 6.8,
+        "revenue_yoy_quarter": 0.32
+      }
+    }
+  }
+}
