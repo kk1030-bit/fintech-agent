@@ -1,0 +1,146 @@
+{
+  "contract_version": "v1.2",
+  "tools_version": "tools-v12.0",
+  "tool_count": 6,
+  "role_tools": {
+    "researcher": [
+      "search_evidence",
+      "read_evidence",
+      "get_financial_snapshot",
+      "get_macro_snapshot",
+      "get_price_window",
+      "calculate_metrics"
+    ],
+    "reviewer": [
+      "read_evidence",
+      "get_financial_snapshot",
+      "get_macro_snapshot",
+      "calculate_metrics"
+    ]
+  },
+  "tools": [
+    {
+      "name": "search_evidence",
+      "description": "查詢已入庫之公開財報公告、總經指標與重大訊息索引。禁止通用網頁爬蟲。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": ["2330", "2317", "2454"]
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": ["ticker", "query", "cutoff", "limit"]
+      }
+    },
+    {
+      "name": "read_evidence",
+      "description": "讀取指定快照片段（繁中 <= 1,200 字），附段落、hash 與原始來源連結。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "evidence_version_id": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "required": ["evidence_version_id"]
+      }
+    },
+    {
+      "name": "get_financial_snapshot",
+      "description": "取得截至 cutoff 之 FinMind 財務指標。嚴格區分 single_quarter、ytd 與 instant。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": ["2330", "2317", "2454", "2379", "3034"]
+          },
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          }
+        },
+        "required": ["ticker", "cutoff"]
+      }
+    },
+    {
+      "name": "get_macro_snapshot",
+      "description": "取得已核准白名單之總經快照 (CPI, GDP, 利率等) 與觀察期/修訂時間。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cutoff": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "series_ids": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "maxItems": 5
+          }
+        },
+        "required": ["cutoff", "series_ids"]
+      }
+    },
+    {
+      "name": "get_price_window",
+      "description": "取得指定交易日數之收盤價序列（Researcher 專用，Reviewer 查價需退件）。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "enum": ["2330", "2317", "2454", "2379", "3034"]
+          },
+          "end_at": {
+            "type": "string",
+            "description": "ISO-8601 with timezone; only data available at or before it"
+          },
+          "sessions": {
+            "type": "integer",
+            "enum": [1, 5, 20]
+          }
+        },
+        "required": ["ticker", "end_at", "sessions"]
+      }
+    },
+    {
+      "name": "calculate_metrics",
+      "description": "確定性純數學運算模組，禁止 LLM 自行計算。支援 growth_rate, simple_return, pe_ttm, dcf_scenario, peer_comparison。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string",
+            "enum": ["growth_rate", "simple_return", "pe_ttm", "dcf_scenario", "peer_comparison"]
+          },
+          "values": {
+            "type": "object"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 20
+          }
+        },
+        "required": ["operation", "values", "evidence_refs"]
+      }
+    }
+  ]
+}
