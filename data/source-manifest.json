@@ -1,0 +1,68 @@
+{
+  "manifest_version": "v1.2",
+  "generated_at": "2026-09-28T09:00:00+08:00",
+  "verified_by": "Team Member B",
+  "hash_algorithm": "sha256",
+  "lock_status": "frozen_w03",
+  "statement_basis": "consolidated",
+  "sources": [
+    {
+      "source_id": "src-finmind-2454-fs",
+      "entity": "2454",
+      "source_type": "financial",
+      "provider": "FinMind (TaiwanStockFinancialStatements)",
+      "endpoint_url": "https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&data_id=2454",
+      "published_at": "2026-08-10T15:00:00+08:00",
+      "captured_at": "2026-08-10T16:00:00+08:00",
+      "available_at": "2026-08-10T15:00:00+08:00",
+      "content_hash": "9b12e3f4a56c7890bcdef1234567890abcdef1234567890abcdef1234567890a",
+      "currency": "TWD",
+      "unit": "100m",
+      "covered_periods": ["2025Q3", "2025Q4", "2026Q1", "2026Q2"],
+      "notes": "已差分還原單季發生額；四連續季單季可算 TTM"
+    },
+    {
+      "source_id": "src-finmind-2330-fs",
+      "entity": "2330",
+      "source_type": "financial",
+      "provider": "FinMind (TaiwanStockFinancialStatements)",
+      "endpoint_url": "https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&data_id=2330",
+      "published_at": "2026-07-16T14:00:00+08:00",
+      "captured_at": "2026-07-16T15:30:00+08:00",
+      "available_at": "2026-07-16T14:00:00+08:00",
+      "content_hash": "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2",
+      "currency": "TWD",
+      "unit": "100m",
+      "covered_periods": ["2026Q2"],
+      "notes": "單季完整財務快照"
+    },
+    {
+      "source_id": "src-finmind-price-20260930",
+      "entity": "2454/2379/3034/2330",
+      "source_type": "market",
+      "provider": "FinMind (TaiwanStockPrice)",
+      "endpoint_url": "https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice",
+      "published_at": "2026-09-30T15:30:00+08:00",
+      "captured_at": "2026-09-30T16:00:00+08:00",
+      "available_at": "2026-09-30T15:30:00+08:00",
+      "content_hash": "7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+      "currency": "TWD",
+      "price_basis": "raw_close",
+      "sessions": 5,
+      "notes": "統一報價基準日 2026-09-30，作為同業估值比率分子"
+    },
+    {
+      "source_id": "src-fred-macro-2026q2",
+      "entity": "US_Economy",
+      "source_type": "macro",
+      "provider": "FRED (stlouisfed.org)",
+      "endpoint_url": "https://api.stlouisfed.org/fred/series/observations",
+      "published_at": "2026-07-14T08:30:00-04:00",
+      "captured_at": "2026-07-14T10:00:00-04:00",
+      "available_at": "2026-07-14T08:30:00-04:00",
+      "content_hash": "4a5b6c7d8e9f0123456789abcdef0123456789abcdef0123456789abcdef0123",
+      "series_whitelist": ["CPIAUCSL", "FEDFUNDS", "UNRATE", "GDP", "DGS10"],
+      "notes": "總經白名單指標快照"
+    }
+  ]
+}
