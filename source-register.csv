@@ -1,0 +1,7 @@
+source_id,source_type,entity,endpoint_or_url,latency_rule,statement_basis,content_scope
+finmind_fs,financial,2330/2317/2454/2379/3034,TaiwanStockFinancialStatements,captured_at (無官方發布時間時不早填),single_quarter/ytd/annual,損益表/資產負債表/現金流量表原始數據
+finmind_price,market,2330/2317/2454/2379/3034,TaiwanStockPrice,T+0 (盤後 15:30 後可得),instant,每日開高低收與成交量；同基準日比率分子
+finmind_info,reference,2330/2317/2454/2379/3034,TaiwanStockInfo,T+0,instant,公司全稱/股票代號/上市櫃別對照
+fred_macro,macro,US_Economy,fred.stlouisfed.org,依官方 release schedule (標示 vintage_date),instant,美國 CPI/GDP/失業率/基準利率/10年期公債殖利率
+tw_market,macro,TW_Economy,TaiwanStockTotalReturnIndex,T+0 (盤後),instant,加權股價報酬指數 (TAIEX / TWII) 月度與報酬序列
+supabase_db,storage,System_State,Supabase PostgreSQL (research_jobs/fundamental_data),instant,NA,持久化任務狀態/事件軌跡/財務與總經快照快取
