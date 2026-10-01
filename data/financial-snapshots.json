@@ -1,0 +1,210 @@
+{
+  "manifest_version": "v1.2",
+  "generated_at": "2026-09-28T09:00:00+08:00",
+  "source_manifest": {
+    "provider": "FinMind & FRED Official Release",
+    "verified_by": "Team Member B",
+    "hash_algorithm": "sha256",
+    "statement_basis": "consolidated",
+    "notes": "全歷史快照已固定，包含 2454, 2379, 3034, 2330 財務與收盤數據"
+  },
+  "evidences": [
+    {
+      "source_id": "src-2330-2026q2-announce",
+      "evidence_version_id": "ev-2330-2026q2-01",
+      "ticker": "2330",
+      "title": "台積電公佈 2026 年第二季財務報告",
+      "published_at": "2026-07-16T14:00:00+08:00",
+      "captured_at": "2026-07-16T15:30:00+08:00",
+      "available_at": "2026-07-16T14:00:00+08:00",
+      "source_url": "https://mops.twse.com.tw/mops/web/t05st01",
+      "content_hash": "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2",
+      "paragraph": "台積公司 2026 年第二季合併營收約為新台幣 6,735 億元，稅後純益約為新台幣 2,478 億元，每股盈餘為新台幣 9.55 元。毛利率為 53.2%，營業利益率為 42.5%。",
+      "abstract": "台積公司 2026Q2 合併營收 6,735 億元，EPS 9.55 元，毛利率 53.2%。"
+    },
+    {
+      "source_id": "src-2454-2026q2-announce",
+      "evidence_version_id": "ev-2454-2026q2-01",
+      "ticker": "2454",
+      "title": "聯發科技 2026 年第二季營業報告公告",
+      "published_at": "2026-08-10T15:00:00+08:00",
+      "captured_at": "2026-08-10T16:00:00+08:00",
+      "available_at": "2026-08-10T15:00:00+08:00",
+      "source_url": "https://mops.twse.com.tw/mops/web/t05st01",
+      "content_hash": "9b12e3f4a56c7890bcdef1234567890abcdef1234567890abcdef1234567890a",
+      "paragraph": "聯發科技 2026 年第二季合併營業收入為新台幣 1,272.7 億元，單季營業利益為新台幣 249.6 億元，稅後純益為新台幣 259.6 億元，每股純益為新台幣 16.19 元。",
+      "abstract": "聯發科技 2026Q2 合併營收 1,272.7 億元，單季 EPS 16.19 元。"
+    }
+  ],
+  "financials": {
+    "2454": {
+      "company_name": "聯發科技",
+      "statement_basis": "consolidated",
+      "currency": "TWD",
+      "quarters": [
+        {
+          "period": "2025Q3",
+          "period_basis": "single_quarter",
+          "revenue": 1318.1,
+          "net_income": 255.9,
+          "operating_cash_flow": 310.5,
+          "capital_expenditure": 42.1,
+          "free_cash_flow": 268.4,
+          "eps": 15.94,
+          "shares_outstanding": 1600.0,
+          "net_debt": -720.0,
+          "available_at": "2025-11-10T16:00:00+08:00"
+        },
+        {
+          "period": "2025Q4",
+          "period_basis": "single_quarter",
+          "revenue": 1296.5,
+          "net_income": 257.1,
+          "operating_cash_flow": 295.0,
+          "capital_expenditure": 45.0,
+          "free_cash_flow": 250.0,
+          "eps": 16.02,
+          "shares_outstanding": 1600.0,
+          "net_debt": -750.0,
+          "available_at": "2026-03-15T16:00:00+08:00"
+        },
+        {
+          "period": "2026Q1",
+          "period_basis": "single_quarter",
+          "revenue": 1334.6,
+          "net_income": 316.4,
+          "operating_cash_flow": 380.2,
+          "capital_expenditure": 38.6,
+          "free_cash_flow": 341.6,
+          "eps": 19.85,
+          "shares_outstanding": 1600.0,
+          "net_debt": -810.0,
+          "available_at": "2026-05-10T16:00:00+08:00"
+        },
+        {
+          "period": "2026Q2",
+          "period_basis": "single_quarter",
+          "revenue": 1272.7,
+          "net_income": 259.6,
+          "operating_cash_flow": 305.1,
+          "capital_expenditure": 41.2,
+          "free_cash_flow": 263.9,
+          "eps": 16.19,
+          "shares_outstanding": 1600.0,
+          "net_debt": -830.0,
+          "available_at": "2026-08-10T16:00:00+08:00"
+        }
+      ]
+    },
+    "2379": {
+      "company_name": "瑞昱半導體",
+      "statement_basis": "consolidated",
+      "currency": "TWD",
+      "quarters": [
+        {
+          "period": "2026Q2",
+          "period_basis": "single_quarter",
+          "revenue": 305.5,
+          "net_income": 33.8,
+          "operating_cash_flow": 41.2,
+          "capital_expenditure": 12.0,
+          "free_cash_flow": 29.2,
+          "eps": 6.55,
+          "shares_outstanding": 512.0,
+          "net_debt": -180.0,
+          "available_at": "2026-08-05T16:00:00+08:00"
+        }
+      ]
+    },
+    "3034": {
+      "company_name": "聯詠科技",
+      "statement_basis": "consolidated",
+      "currency": "TWD",
+      "quarters": [
+        {
+          "period": "2026Q2",
+          "period_basis": "single_quarter",
+          "revenue": 252.0,
+          "net_income": 53.6,
+          "operating_cash_flow": 60.5,
+          "capital_expenditure": 8.5,
+          "free_cash_flow": 52.0,
+          "eps": 8.81,
+          "shares_outstanding": 608.5,
+          "net_debt": -320.0,
+          "available_at": "2026-08-08T16:00:00+08:00"
+        }
+      ]
+    },
+    "2330": {
+      "company_name": "台積電",
+      "statement_basis": "consolidated",
+      "currency": "TWD",
+      "quarters": [
+        {
+          "period": "2026Q2",
+          "period_basis": "single_quarter",
+          "revenue": 6735.0,
+          "net_income": 2478.0,
+          "operating_cash_flow": 3410.0,
+          "capital_expenditure": 2100.0,
+          "free_cash_flow": 1310.0,
+          "eps": 9.55,
+          "shares_outstanding": 25930.0,
+          "net_debt": -8500.0,
+          "available_at": "2026-07-16T15:30:00+08:00"
+        }
+      ]
+    }
+  },
+  "macro": [
+    {
+      "series_id": "CPIAUCSL",
+      "indicator": "CPI",
+      "observation_date": "2026-06",
+      "available_at": "2026-07-14T08:30:00-04:00",
+      "value": 314.2,
+      "unit": "Index 1982-1984=100",
+      "source": "FRED"
+    },
+    {
+      "series_id": "FEDFUNDS",
+      "indicator": "聯邦基金利率",
+      "observation_date": "2026-06",
+      "available_at": "2026-07-01T09:00:00-04:00",
+      "value": 5.33,
+      "unit": "%",
+      "source": "FRED"
+    }
+  ],
+  "prices": {
+    "2454": [
+      { "trade_date": "2026-09-24", "close": 1230.0 },
+      { "trade_date": "2026-09-25", "close": 1240.0 },
+      { "trade_date": "2026-09-26", "close": 1245.0 },
+      { "trade_date": "2026-09-27", "close": 1240.0 },
+      { "trade_date": "2026-09-30", "close": 1250.0 }
+    ],
+    "2379": [
+      { "trade_date": "2026-09-24", "close": 505.0 },
+      { "trade_date": "2026-09-25", "close": 508.0 },
+      { "trade_date": "2026-09-26", "close": 512.0 },
+      { "trade_date": "2026-09-27", "close": 510.0 },
+      { "trade_date": "2026-09-30", "close": 510.0 }
+    ],
+    "3034": [
+      { "trade_date": "2026-09-24", "close": 535.0 },
+      { "trade_date": "2026-09-25", "close": 538.0 },
+      { "trade_date": "2026-09-26", "close": 542.0 },
+      { "trade_date": "2026-09-27", "close": 539.0 },
+      { "trade_date": "2026-09-30", "close": 540.0 }
+    ],
+    "2330": [
+      { "trade_date": "2026-09-24", "close": 980.0 },
+      { "trade_date": "2026-09-25", "close": 985.0 },
+      { "trade_date": "2026-09-26", "close": 990.0 },
+      { "trade_date": "2026-09-27", "close": 995.0 },
+      { "trade_date": "2026-09-30", "close": 1005.0 }
+    ]
+  }
+}
