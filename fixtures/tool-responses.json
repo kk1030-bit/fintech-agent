@@ -1,0 +1,145 @@
+{
+  "fixture_version": "v1.2",
+  "note": "6 大工具標準輸出 Fixtures（包含正常回傳與 no_data / invalid_input 錯誤結構）",
+  "responses": {
+    "search_evidence": {
+      "success": {
+        "status": "ok",
+        "tool": "search_evidence",
+        "data": [
+          {
+            "source_id": "src-2330-2026q2-report",
+            "title": "台灣積體電路製造股份有限公司 2026 年第二季財務報告公告",
+            "published_at": "2026-07-16T14:00:00+08:00",
+            "captured_at": "2026-07-16T15:30:00+08:00",
+            "available_at": "2026-07-16T14:00:00+08:00",
+            "content_hash": "a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0",
+            "abstract": "台積公司公佈 2026 年第二季合併營收約為新台幣 6,735 億元，稅後純益約為新台幣 2,478 億元..."
+          }
+        ]
+      },
+      "no_data": {
+        "status": "no_data",
+        "tool": "search_evidence",
+        "reason": "在指定 cutoff 以前查無符合條件的公告或索引快照",
+        "data": null
+      }
+    },
+    "read_evidence": {
+      "success": {
+        "status": "ok",
+        "tool": "read_evidence",
+        "data": {
+          "evidence_version_id": "ev-2330-2026q2-01",
+          "paragraph": "2026 年第二季毛利率為 53.2%，營業利益率為 42.5%，稅後純益率為 36.8%。先進製程（包含 7 奈米及更先進行程）營收達到全季晶圓銷售金額的 67%。",
+          "source_url": "https://mops.twse.com.tw/mops/web/t05st01",
+          "content_hash": "f0e1d2c3b4a596877869504132231405abcdef0123456789abcdef0123456789",
+          "available_at": "2026-07-16T14:00:00+08:00"
+        }
+      },
+      "no_data": {
+        "status": "no_data",
+        "tool": "read_evidence",
+        "reason": "查無指定 evidence_version_id 之不可變文本片段",
+        "data": null
+      }
+    },
+    "get_financial_snapshot": {
+      "success": {
+        "status": "ok",
+        "tool": "get_financial_snapshot",
+        "data": {
+          "ticker": "2330",
+          "statement_basis": "consolidated",
+          "currency": "TWD",
+          "unit": "100m",
+          "metrics": {
+            "revenue_single_q": 6735.0,
+            "net_income_single_q": 2478.0,
+            "cfo_single_q": 3410.0,
+            "capex_single_q": 2100.0,
+            "fcf_single_q": 1310.0,
+            "eps_single_q": 9.55,
+            "eps_ttm": 38.2,
+            "shares_outstanding_m": 25930.0,
+            "net_debt": -8500.0
+          },
+          "available_at": "2026-07-16T15:30:00+08:00"
+        }
+      },
+      "no_data": {
+        "status": "no_data",
+        "tool": "get_financial_snapshot",
+        "reason": "該個股在指定 cutoff 前無可用的完整財務快照",
+        "data": null
+      }
+    },
+    "get_macro_snapshot": {
+      "success": {
+        "status": "ok",
+        "tool": "get_macro_snapshot",
+        "data": [
+          {
+            "series_id": "CPIAUCSL",
+            "indicator": "CPI",
+            "observation_date": "2026-06",
+            "available_at": "2026-07-14T08:30:00-04:00",
+            "value": 314.2,
+            "unit": "Index 1982-1984=100",
+            "source": "FRED"
+          }
+        ]
+      },
+      "no_data": {
+        "status": "no_data",
+        "tool": "get_macro_snapshot",
+        "reason": "白名單指標於 cutoff 前無發布數值",
+        "data": null
+      }
+    },
+    "get_price_window": {
+      "success": {
+        "status": "ok",
+        "tool": "get_price_window",
+        "data": {
+          "ticker": "2330",
+          "currency": "TWD",
+          "price_basis": "raw_close",
+          "sessions": 5,
+          "closes": [
+            { "trade_date": "2026-09-24", "close": 980.0 },
+            { "trade_date": "2026-09-25", "close": 985.0 },
+            { "trade_date": "2026-09-26", "close": 990.0 },
+            { "trade_date": "2026-09-27", "close": 995.0 },
+            { "trade_date": "2026-09-30", "close": 1005.0 }
+          ]
+        }
+      },
+      "no_data": {
+        "status": "no_data",
+        "tool": "get_price_window",
+        "reason": "個股於觀察窗內停牌或無交易數據",
+        "data": null
+      }
+    },
+    "calculate_metrics": {
+      "success_pe_ttm": {
+        "status": "ok",
+        "tool": "calculate_metrics",
+        "data": {
+          "operation": "pe_ttm",
+          "calculation_basis": "price / eps_ttm",
+          "result_value": 26.31,
+          "is_applicable": true,
+          "evidence_refs": ["ev-price-20260930", "ev-eps-ttm-2026q2"]
+        }
+      },
+      "invalid_input_negative_eps": {
+        "status": "invalid_input",
+        "tool": "calculate_metrics",
+        "reason": "EPS TTM 為非正數 (<= 0)，不適用 P/E 本益比計算，標註 NA",
+        "data": null
+      }
+    }
+  }
+}
