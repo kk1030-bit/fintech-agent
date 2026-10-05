@@ -6,6 +6,7 @@ GET  /research                    workspace page (no job is created by opening i
 GET  /api/ui/published            published report metadata (read-only, 0 LLM)
 POST /api/ui/mock/jobs            MOCK job create — only when RESEARCH_UI_MOCK=1
 GET  /api/ui/jobs/<job_id>        MOCK job status + trace, read from the job DB
+POST /api/ui/mock/jobs/<id>/cancel  cancel a running MOCK job
 
 Rules from the handbook kept here:
 * No API key or token is ever sent to the browser; the page cannot reach the
@@ -123,3 +124,16 @@ def mock_job_status(job_id: str):
         return jsonify({"ok": False, "error": "not_found"}), 404
     job, events = found
     return jsonify({"ok": True, "job": job, "events": events})
+
+
+@bp.post("/api/ui/mock/jobs/<job_id>/cancel")
+def cancel_mock_job(job_id: str):
+    if not mock_enabled():
+        return disabled()
+    try:
+        job = get_mock().cancel(job_id)
+    except KeyError:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    except ContractError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 409
+    return jsonify({"ok": True, "job": job})

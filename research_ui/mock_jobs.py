@@ -13,13 +13,16 @@ Every event carries `"mock": true`; no model is called anywhere here.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
 from agents.contract import ContractError, validate_job_request
 from agents.store import JobStore, StaleLeaseError
+from agents import tools_impl
 
 WORKER_ID = "ui-mock-worker"
 STEP_SECONDS = float(os.getenv("RESEARCH_UI_MOCK_STEP_SECONDS", "1.5"))
@@ -36,7 +39,8 @@ PUBLIC_DETAIL_KEYS = (
     "args_redacted", "output_hash", "claim_id", "severity", "required_evidence", "budget",
 )
 
-SCENARIOS = ("succeeded", "insufficient_evidence")
+SCENARIOS = ("succeeded", "insufficient_evidence", "paused_quota", "failed", "timed_out")
+CANCELLABLE = ("running",)
 
 
 def _snapshot_id(root: Path) -> str:
@@ -48,32 +52,103 @@ def _snapshot_id(root: Path) -> str:
         return "fin-snap:unavailable"
 
 
-def _steps(scenario: str, ticker: str) -> list[dict[str, Any]]:
-    """Scripted MOCK steps. Each step = one event (+ optional job changes)."""
+def _tool(name: str, **args: Any) -> dict[str, Any]:
+    return {"tool": name, "args": args}
 
-    start = [
-        {"role": "researcher", "event_type": "plan", "detail": {
-            "summary": "MOCK：依研究問題決定先查財報快照", "decision_summary": "缺最新季資料，先取財務快照"}},
-        {"role": "researcher", "event_type": "tool_call", "tool": "get_financial_snapshot", "detail": {
-            "summary": "MOCK：讀取 cutoff 前可得的單季與 TTM", "args_redacted": {"ticker": ticker, "cutoff": "<job.cutoff_at>"}},
-         "changes": {"stage": "tools", "calls_used": 1, "tool_calls_used": 1, "active_seconds": 6.0}},
-    ]
+
+def _steps(scenario: str, ticker: str) -> list[dict[str, Any]]:
+    """Scripted MOCK steps. Model decisions are scripted (MOCK); tool steps run
+    B's real deterministic tools (agents/tools_impl.py) on the fixed snapshot,
+    so tool_status, evidence ids and output hashes in the trace are real."""
+
+    plan = {"role": "researcher", "event_type": "plan", "detail": {
+        "summary": "MOCK：模型決策為預錄腳本，工具結果為真實快照輸出",
+        "decision_summary": "先確認 cutoff 前可得的最新季財報"},
+        "changes": {"calls_used": 1, "active_seconds": 4.0}}
+    fin = {"role": "researcher", "event_type": "tool_call", "call": _tool("get_financial_snapshot", ticker=ticker),
+           "changes": {"stage": "tools", "tool_calls_used": 1, "active_seconds": 6.0}}
+
     if scenario == "insufficient_evidence":
-        return start + [
-            {"role": "researcher", "event_type": "stop", "detail": {
-                "summary": "MOCK：關鍵資料缺失，停止並保留限制",
-                "decision_summary": "財報快照無資料且沒有可用替代工具"},
-             "changes": {"status": "insufficient_evidence", "stage": "finished", "calls_used": 2,
-                         "active_seconds": 9.0, "stop_reason": "missing_key_financials"}},
-        ]
-    return start + [
-        {"role": "researcher", "event_type": "draft", "detail": {"summary": "MOCK：提出 3 項主張草稿"},
-         "changes": {"stage": "review", "calls_used": 2, "active_seconds": 14.0}},
-        {"role": "reviewer", "event_type": "review", "detail": {"summary": "MOCK：覆核通過（仍需人工核准才發布）"},
-         "changes": {"calls_used": 3, "active_seconds": 19.0}},
-        {"role": "system", "event_type": "finished", "detail": {"summary": "MOCK：研究完成，等待人工核准"},
-         "changes": {"status": "succeeded", "stage": "finished", "stop_reason": "mock_completed"}},
-    ]
+        return [plan, fin,
+                {"role": "researcher", "event_type": "tool_call", "call": _tool("search_evidence", ticker=ticker, query="財報", limit=3),
+                 "changes": {"calls_used": 2, "tool_calls_used": 2, "active_seconds": 10.0}},
+                {"role": "researcher", "event_type": "stop", "detail": {
+                    "summary": "關鍵財報與證據皆無資料，停止並保留限制，不產生評級",
+                    "decision_summary": "兩個工具都回 no_data，沒有其他可用工具"},
+                 "changes": {"status": "insufficient_evidence", "stage": "finished", "calls_used": 3,
+                             "active_seconds": 12.0, "stop_reason": "missing_key_financials"}}]
+    if scenario == "paused_quota":
+        return [plan, fin,
+                {"role": "system", "event_type": "quota_pause", "detail": {
+                    "summary": "MOCK：每日請求額度用盡，保存檢查點；累計預算不歸零",
+                    "budget": {"calls_used": 2, "limit": 8}},
+                 "changes": {"status": "paused_quota", "calls_used": 2, "active_seconds": 8.0,
+                             "stop_reason": "daily_quota_exhausted"}}]
+    if scenario == "failed":
+        return [plan, fin,
+                {"role": "system", "event_type": "error", "detail": {
+                    "summary": "MOCK：worker 例外，job 標為失敗並保留已完成的步驟"},
+                 "changes": {"status": "failed", "stage": "finished", "active_seconds": 9.0,
+                             "stop_reason": "worker_error: MOCK simulated exception"}}]
+    if scenario == "timed_out":
+        return [plan, fin,
+                {"role": "system", "event_type": "timeout", "detail": {
+                    "summary": "MOCK：主動執行時間達 180 秒上限，保存檢查點後停止，不冒充成功"},
+                 "changes": {"status": "timed_out", "stage": "finished", "active_seconds": 180.0,
+                             "stop_reason": "active_time_limit_180s"}}]
+    # succeeded
+    return [plan,
+            {"role": "researcher", "event_type": "tool_call", "call": _tool("search_evidence", ticker=ticker, query="第二季", limit=3),
+             "changes": {"stage": "tools", "tool_calls_used": 1, "active_seconds": 6.0}},
+            {"role": "researcher", "event_type": "tool_call", "call": _tool("read_evidence", evidence_version_id=f"ev-{ticker}-2026q2-01"),
+             "changes": {"tool_calls_used": 2, "active_seconds": 8.0}},
+            {**fin, "changes": {"tool_calls_used": 3, "active_seconds": 10.0}},
+            {"role": "researcher", "event_type": "draft", "detail": {
+                "summary": "MOCK：提出草稿主張，每項附來源 ID", "evidence_refs": [f"ev-{ticker}-2026q2-01"]},
+             "changes": {"stage": "review", "calls_used": 2, "active_seconds": 15.0}},
+            {"role": "reviewer", "event_type": "tool_call", "call": _tool("read_evidence", evidence_version_id=f"ev-{ticker}-2026q2-01"),
+             "changes": {"tool_calls_used": 4, "active_seconds": 17.0}},
+            {"role": "reviewer", "event_type": "review", "detail": {
+                "summary": "MOCK：覆核通過；發布仍需人工核准", "decision_summary": "引用片段與草稿數字一致"},
+             "changes": {"calls_used": 3, "active_seconds": 21.0}},
+            {"role": "system", "event_type": "finished", "detail": {"summary": "研究完成，等待人工核准（未發布）"},
+             "changes": {"status": "succeeded", "stage": "finished", "stop_reason": "mock_completed"}}]
+
+
+def _run_tool(call: dict[str, Any], cutoff: str) -> dict[str, Any]:
+    """Run one of B's deterministic tools and keep only what the trace may show."""
+
+    name, args = call["tool"], dict(call["args"])
+    if name in ("search_evidence", "get_financial_snapshot"):
+        args["cutoff"] = cutoff
+    started = time.perf_counter()
+    out = getattr(tools_impl, name)(**args)
+    latency_ms = round((time.perf_counter() - started) * 1000, 1)
+    data = out.get("data")
+    refs: list[str] = []
+    if isinstance(data, list):
+        refs = [str(d.get("evidence_version_id") or d.get("source_id")) for d in data if isinstance(d, dict)]
+    elif isinstance(data, dict) and data.get("evidence_version_id"):
+        refs = [str(data["evidence_version_id"])]
+    shown_args = {k: ("<job.cutoff_at>" if k == "cutoff" else v) for k, v in args.items()}
+    if out.get("reason"):
+        summary = out["reason"]
+    elif name == "search_evidence":
+        summary = f"找到 {len(refs)} 筆來源"
+    elif name == "read_evidence":
+        summary = "讀取不可變片段"
+    elif name == "get_financial_snapshot" and isinstance(data, dict):
+        summary = f"最新可得財報期 {data.get('latest_period') or 'NA'}"
+    else:
+        summary = str(out.get("status"))
+    return {
+        "tool_status": out.get("status"),
+        "summary": summary,
+        "evidence_refs": refs,
+        "latency_ms": latency_ms,
+        "args_redacted": shown_args,
+        "output_hash": hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16],
+    }
 
 
 class MockJobs:
@@ -108,8 +183,9 @@ class MockJobs:
         queue_ahead = 0
         if job["status"] == "queued":
             queue_ahead = self.store._conn.execute(
-                "select count(*) from research_jobs where status in ('queued','running') and created_at < ?",
-                (job["created_at"],),
+                "select count(*) from research_jobs where status in ('queued','running')"
+                " and rowid < (select rowid from research_jobs where job_id = ?)",
+                (job_id,),
             ).fetchone()[0]
         public = self.public_job(job)
         public["queue_ahead"] = queue_ahead
@@ -135,6 +211,26 @@ class MockJobs:
 
     def _is_mock(self, job_id: str) -> bool:
         return self.store._conn.execute("select 1 from ui_mock_jobs where job_id = ?", (job_id,)).fetchone() is not None
+
+    # ----- cancel ---------------------------------------------------------------
+    def cancel(self, job_id: str) -> dict[str, Any]:
+        """Cancel a running MOCK job through the normal fenced write.
+
+        A queued job cannot be cancelled here: JobStore only lets the lease
+        holder change status (CR-A03 for 組長)."""
+
+        self.pump()
+        job = self.store.get_job(job_id)
+        if job is None or not self._is_mock(job_id):
+            raise KeyError(job_id)
+        if job["status"] not in CANCELLABLE:
+            raise ContractError(f"目前狀態 {job['status']} 不能取消（排隊中取消需組長 JobStore 支援）")
+        row = self.store._conn.execute("select lease_token from research_jobs where job_id = ?", (job_id,)).fetchone()
+        self.store.append_event(job_id, "system", "cancelled", None,
+                                {"mock": True, "summary": "操作者取消；已完成的步驟與預算保留"})
+        job = self.store.update_job(job_id, WORKER_ID, row["lease_token"],
+                                    {"status": "cancelled", "stage": "finished", "stop_reason": "cancelled_by_operator"})
+        return self.public_job(job)
 
     # ----- time-based progression ---------------------------------------------
     def pump(self) -> None:
@@ -165,7 +261,11 @@ class MockJobs:
             for index in range(meta["step"], due):
                 step = steps[index]
                 detail = {"mock": True, **step.get("detail", {})}
-                self.store.append_event(job_id, step["role"], step["event_type"], step.get("tool"), detail)
+                tool_name = None
+                if step.get("call"):
+                    tool_name = step["call"]["tool"]
+                    detail.update(_run_tool(step["call"], job["cutoff_at"]))
+                self.store.append_event(job_id, step["role"], step["event_type"], tool_name, detail)
                 if step.get("changes"):
                     self.store.update_job(job_id, WORKER_ID, token, step["changes"])
                 else:

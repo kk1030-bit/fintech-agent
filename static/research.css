@@ -149,8 +149,17 @@ button.danger { background: var(--panel); color: var(--danger); border: 1px soli
 .trace .line1 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .trace .line2 { color: var(--muted); margin-top: 3px; line-height: 1.6; overflow-wrap: anywhere; }
 
+.ref {
+  height: auto; min-height: 22px; padding: 1px 8px; border-radius: 11px; background: #f2f8fb; color: var(--blue-deep);
+  border: 1px solid #c9dfe9; font: 12px ui-monospace, Menlo, Consolas, monospace; font-weight: 400; cursor: pointer;
+  overflow-wrap: anywhere; text-align: left;
+}
+.ref:hover { background: #e6f1f6; }
+
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
+  .col { display: contents; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; }
   .topbar { display: grid; }
   .status { white-space: normal; justify-self: start; }
   h1 { font-size: 24px; }

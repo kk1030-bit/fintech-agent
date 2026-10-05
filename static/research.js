@@ -18,7 +18,7 @@
     queued: ["排隊中", "b-neutral"],
     running: ["執行中", "b-run"],
     paused_quota: ["暫停：配額", "b-warn"],
-    succeeded: ["完成（待人工核准）", "b-ok"],
+    succeeded: ["研究完成・待人工核准", "b-ok"],
     insufficient_evidence: ["資料不足", "b-warn"],
     timed_out: ["逾時停止", "b-bad"],
     failed: ["失敗", "b-bad"],
@@ -37,13 +37,13 @@
   function esc(value) {
     return String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
-  function fmtTime(iso) {
+  function fmtTime(iso, withSeconds = false) {
     if (!iso) return "—";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return esc(iso);
-    return new Intl.DateTimeFormat("zh-TW", {
-      timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false
-    }).format(d);
+    const opts = { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+    if (withSeconds) opts.second = "2-digit";
+    return new Intl.DateTimeFormat("zh-TW", opts).format(d);
   }
   function badge(text, cls) { return `<span class="badge ${cls}">${esc(text)}</span>`; }
   function setStatus(text) { pageStatus.textContent = text; }
@@ -236,11 +236,25 @@
     return `<div class="meter"><span>${esc(label)}</span><span class="bar"><i class="${pct >= 100 ? "full" : ""}" style="width:${pct}%"></i></span><span>${esc(value)}${unit}/${max}${unit}</span></div>`;
   }
 
+  function syncEntry(job) {
+    const radio = document.getElementById(`t${job.ticker}`);
+    if (radio && !radio.checked) { radio.checked = true; renderFavorites(); }
+  }
+
   function renderJob(job) {
+    syncEntry(job);
     const [text, cls] = STATUS_TEXT[job.status] || [job.status, "b-neutral"];
     let note = "";
     if (job.status === "queued") note = `<p class="hint">一次只執行 1 個 job，前面還有 ${esc(job.queue_ahead ?? 0)} 個。</p>`;
-    if (job.status === "insufficient_evidence") note = `<p class="hint">資料不足時不產生買賣評級；停止原因見下方與軌跡。</p>`;
+    const NOTES = {
+      insufficient_evidence: "資料不足時不產生買賣評級；具體缺口見停止原因與軌跡。",
+      paused_quota: "已暫停：額度用盡時保存檢查點。恢復後沿用累計請求數，不會歸零；不會自動狂重試。",
+      failed: "執行失敗：已完成的步驟保留在軌跡中；失敗不會被標成完成。",
+      timed_out: "主動執行時間達 180 秒上限，已停止並保存檢查點，不冒充成功。",
+      cancelled: "已由操作者取消；已花費的預算與已完成步驟保留。",
+      succeeded: "研究流程完成，但尚未經人工核准，所以不會出現在已發布清單。"
+    };
+    if (NOTES[job.status]) note = `<p class="hint">${esc(NOTES[job.status])}</p>`;
     $("#jobPanel").innerHTML = `
       <div class="actions">${badge(text, cls)}${badge(`階段：${STAGE_TEXT[job.stage] || job.stage}`, "b-neutral")}${job.mock ? badge("MOCK", "b-fixture") : ""}</div>
       ${note}
@@ -257,7 +271,10 @@
         ${meter("工具呼叫", job.tool_calls_used, 10)}
         ${meter("補查輪數", job.supplement_rounds, 2)}
         ${meter("主動時間", Math.round(job.active_seconds || 0), 180, "s")}
-      </div>`;
+      </div>
+      ${job.mock && job.status === "running" ? `<div class="actions" style="margin-top:12px"><button type="button" class="danger" id="cancelJob">取消這個 job</button></div>` : ""}`;
+    const cancel = $("#cancelJob");
+    if (cancel) cancel.addEventListener("click", cancelJob);
   }
 
   function renderJobError(err) {
@@ -267,6 +284,8 @@
     $("#jobPanel").innerHTML = `<div class="empty error-box">${esc(msg)}</div>`;
   }
 
+  const TOOL_STATUS = { ok: ["ok", "b-ok"], no_data: ["no_data", "b-warn"], invalid_input: ["invalid_input", "b-bad"] };
+
   function renderTrace(events) {
     if (!events || !events.length) {
       $("#tracePanel").innerHTML = `<div class="empty">job 尚未開始，還沒有動作紀錄。</div>`;
@@ -274,15 +293,36 @@
     }
     $("#tracePanel").innerHTML = `<ol class="trace">${events.map(e => {
       const d = e.detail || {};
+      const ts = d.tool_status ? (TOOL_STATUS[d.tool_status] || [d.tool_status, "b-neutral"]) : null;
+      const refs = Array.isArray(d.evidence_refs) && d.evidence_refs.length
+        ? `<div class="line2">來源 ID：${d.evidence_refs.map(r => `<button type="button" class="ref" data-evidence="${esc(r)}">${esc(r)}</button>`).join(" ")}</div>`
+        : (e.tool_name ? `<div class="line2">來源 ID：無</div>` : "");
+      const args = d.args_redacted ? `<div class="line2 mono">參數 ${esc(JSON.stringify(d.args_redacted))}</div>` : "";
+      const meta = [d.latency_ms != null ? `耗時 ${esc(d.latency_ms)} ms` : "", d.output_hash ? `輸出 hash ${esc(d.output_hash)}` : ""].filter(Boolean).join("・");
       return `<li class="r-${esc(e.role || "system")}">
         <span class="seq">#${esc(e.event_seq)}</span>
         <div>
-          <div class="line1">${badge(ROLE_TEXT[e.role] || e.role || "系統", "b-neutral")}<b>${esc(e.event_type)}</b>${e.tool_name ? badge(e.tool_name, "b-run") : ""}${d.mock ? badge("MOCK", "b-fixture") : ""}<span class="hint" style="margin:0">${fmtTime(e.created_at)}</span></div>
+          <div class="line1">${badge(ROLE_TEXT[e.role] || e.role || "系統", "b-neutral")}<b>${esc(e.event_type)}</b>${e.tool_name ? badge(e.tool_name, "b-run") : ""}${ts ? badge(ts[0], ts[1]) : ""}${d.mock ? badge("MOCK", "b-fixture") : ""}<span class="hint" style="margin:0">${fmtTime(e.created_at, true)}</span></div>
           ${d.summary ? `<div class="line2">${esc(d.summary)}</div>` : ""}
           ${d.decision_summary ? `<div class="line2">決策摘要：${esc(d.decision_summary)}</div>` : ""}
+          ${args}${refs}
+          ${meta ? `<div class="line2">${meta}</div>` : ""}
         </div>
       </li>`;
     }).join("")}</ol>`;
+  }
+
+  async function cancelJob() {
+    if (!currentJobId) return;
+    const btn = $("#cancelJob");
+    if (btn) btn.disabled = true;
+    try {
+      await getJson(`/api/ui/mock/jobs/${encodeURIComponent(currentJobId)}/cancel`, { method: "POST" });
+      setStatus("已取消 job");
+    } catch (err) {
+      setStatus(`取消失敗：${err.message}`);
+    }
+    poll();
   }
 
   /* ---------------- wiring ---------------- */

@@ -141,3 +141,79 @@ def test_events_expose_only_whitelisted_fields(ui, clock):
         assert set(event["detail"]) <= allowed
         assert event["detail"].get("mock") is True or event["event_type"] in ("job_created", "lease_acquired", "lease_recovered")
     assert "idempotency_key" not in json.dumps(body["job"])
+
+
+# ----- W03: real job states, trace, cancel ------------------------------------------
+def run_until_done(client, clock, job_id, polls=20):
+    body = None
+    for _ in range(polls):
+        body = client.get(f"/api/ui/jobs/{job_id}").get_json()
+        if body["job"]["status"] not in ("queued", "running"):
+            break
+        clock.advance(2)
+    return body
+
+
+@pytest.mark.parametrize("scenario,ticker,final", [
+    ("succeeded", "2454", "succeeded"),
+    ("insufficient_evidence", "2317", "insufficient_evidence"),
+    ("paused_quota", "2330", "paused_quota"),
+    ("failed", "2454", "failed"),
+    ("timed_out", "2454", "timed_out"),
+])
+def test_each_status_screen_reaches_its_state(ui, clock, scenario, ticker, final):
+    job_id = create(ui, ticker=ticker, scenario=scenario, idempotency_key=f"k-{scenario}").get_json()["job"]["job_id"]
+    body = run_until_done(ui, clock, job_id)
+    assert body["job"]["status"] == final
+    assert body["job"]["stop_reason"]
+    if final == "paused_quota":
+        assert body["job"]["calls_used"] == 2  # accumulated budget kept, not reset
+        clock.advance(600)
+        assert ui.get(f"/api/ui/jobs/{job_id}").get_json()["job"]["status"] == "paused_quota"  # no silent retry
+
+
+def test_trace_shows_real_tool_results_and_source_ids(ui, clock):
+    job_id = create(ui).get_json()["job"]["job_id"]
+    events = run_until_done(ui, clock, job_id)["events"]
+    tools = [e for e in events if e["tool_name"]]
+    assert {e["tool_name"] for e in tools} == {"search_evidence", "read_evidence", "get_financial_snapshot"}
+    read = next(e for e in tools if e["tool_name"] == "read_evidence")
+    assert read["detail"]["tool_status"] == "ok" and read["detail"]["evidence_refs"] == ["ev-2454-2026q2-01"]
+    assert {e["role"] for e in tools} == {"researcher", "reviewer"}
+    for e in tools:
+        assert e["created_at"] and e["detail"]["output_hash"] and "latency_ms" in e["detail"]
+        assert e["detail"]["args_redacted"].get("cutoff", "<job.cutoff_at>") == "<job.cutoff_at>"
+
+
+def test_missing_data_is_no_data_not_zero(ui, clock):
+    job_id = create(ui, ticker="2317", scenario="insufficient_evidence", idempotency_key="k-2317").get_json()["job"]["job_id"]
+    events = run_until_done(ui, clock, job_id)["events"]
+    statuses = [e["detail"]["tool_status"] for e in events if e["tool_name"]]
+    assert statuses == ["no_data", "no_data"]
+
+
+def test_second_job_waits_in_queue(ui, clock):
+    first = create(ui).get_json()["job"]["job_id"]
+    second = create(ui, ticker="2330", idempotency_key="k-second").get_json()["job"]["job_id"]
+    ui.get(f"/api/ui/jobs/{first}")
+    queued = ui.get(f"/api/ui/jobs/{second}").get_json()["job"]
+    assert queued["status"] == "queued" and queued["queue_ahead"] == 1
+
+
+def test_cancel_running_job_only(ui, clock):
+    job_id = create(ui).get_json()["job"]["job_id"]
+    ui.get(f"/api/ui/jobs/{job_id}")
+    resp = ui.post(f"/api/ui/mock/jobs/{job_id}/cancel")
+    assert resp.status_code == 200 and resp.get_json()["job"]["status"] == "cancelled"
+    assert ui.post(f"/api/ui/mock/jobs/{job_id}/cancel").status_code == 409
+    clock.advance(30)
+    assert ui.get(f"/api/ui/jobs/{job_id}").get_json()["job"]["status"] == "cancelled"  # stays cancelled
+    assert ui.post("/api/ui/mock/jobs/nope/cancel").status_code == 404
+
+
+def test_status_is_read_from_db_by_another_process(tmp_path, clock):
+    writer = make_app(tmp_path, clock).test_client()
+    job_id = create(writer).get_json()["job"]["job_id"]
+    run_until_done(writer, clock, job_id)
+    reader = make_app(tmp_path, clock).test_client()  # separate app, same DB file
+    assert reader.get(f"/api/ui/jobs/{job_id}").get_json()["job"]["status"] == "succeeded"
