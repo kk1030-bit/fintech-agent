@@ -1,0 +1,73 @@
+{
+  "fixture_version": "ui-fixture-v12.0",
+  "synthetic_fixture": true,
+  "fixture_note": "W02-A 介面測試用 FIXTURE：欄位依手冊第 04 章 F03；不是 Agent 產出、不是已核准研究。財報期與可得時間取自 B 的 data/financial-snapshots.json（B、D 尚未確認）。",
+  "generated_at": "2026-10-05T11:00:00+08:00",
+  "published_reports": [
+    {
+      "report_version_id": "rv-fixture-2454-0001",
+      "ticker": "2454",
+      "company": "聯發科",
+      "publication_status": "published",
+      "research_outcome": "succeeded",
+      "cutoff_at": "2026-09-30T17:00:00+08:00",
+      "financial_period": "2026Q2",
+      "published_at": "2026-10-02T10:00:00+08:00",
+      "data_updated_at": "2026-08-10T16:00:00+08:00",
+      "valuation_status": "fixture_pending",
+      "data_quality_risk": "medium",
+      "data_quality_reason": "同業 2379、3034 的證據片段尚未入庫（B 補件）",
+      "pdf_status": "not_available",
+      "synthetic_fixture": true
+    },
+    {
+      "report_version_id": "rv-fixture-2330-0001",
+      "ticker": "2330",
+      "company": "台積電",
+      "publication_status": "published",
+      "research_outcome": "succeeded",
+      "cutoff_at": "2026-09-30T17:00:00+08:00",
+      "financial_period": "2026Q2",
+      "published_at": "2026-10-01T18:30:00+08:00",
+      "data_updated_at": "2026-07-16T14:00:00+08:00",
+      "snapshot_stale": true,
+      "valuation_status": "fixture_pending",
+      "data_quality_risk": "medium",
+      "data_quality_reason": "快照過期：最新可得財報公告為 2026-07-16",
+      "pdf_status": "not_available",
+      "synthetic_fixture": true
+    },
+    {
+      "report_version_id": "rv-fixture-2317-0001",
+      "ticker": "2317",
+      "company": "鴻海",
+      "publication_status": "published",
+      "research_outcome": "insufficient_evidence",
+      "cutoff_at": "2026-09-30T17:00:00+08:00",
+      "financial_period": null,
+      "published_at": "2026-10-01T20:00:00+08:00",
+      "data_updated_at": null,
+      "valuation_status": "undeterminable",
+      "data_quality_risk": "high",
+      "data_quality_reason": "缺關鍵資料：快照內沒有 2317 財報與證據片段",
+      "pdf_status": "not_available",
+      "synthetic_fixture": true
+    },
+    {
+      "report_version_id": "rv-fixture-2454-0002-draft",
+      "ticker": "2454",
+      "company": "聯發科",
+      "publication_status": "draft",
+      "research_outcome": "succeeded",
+      "cutoff_at": "2026-10-03T17:00:00+08:00",
+      "financial_period": "2026Q2",
+      "published_at": null,
+      "data_updated_at": "2026-08-10T16:00:00+08:00",
+      "valuation_status": "fixture_pending",
+      "data_quality_risk": "medium",
+      "data_quality_reason": "未核准草稿：公開端點必須看不到這一列",
+      "pdf_status": "not_available",
+      "synthetic_fixture": true
+    }
+  ]
+}

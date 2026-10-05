@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>研究工作台｜多智能體投資分析系統</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='research.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div>
+        <h1>研究工作台</h1>
+        <p class="subtitle">V1.2 開發版・<a href="{{ url_for('index') }}">回到既有分析頁</a></p>
+      </div>
+      <div class="status" id="pageStatus" role="status" aria-live="polite">系統待命</div>
+    </div>
+
+    <div class="banner" role="note">
+      <strong>MOCK／FIXTURE</strong>
+      <span>本頁所有研究 job 與報告都是介面測試資料，不會呼叫 Gemini、不會執行同步分析、不會寫入正式資料庫。數字待 B、D 確認，不能當研究結論。</span>
+    </div>
+
+    <div class="layout">
+      <div class="col">
+        <section class="panel" aria-labelledby="entryTitle">
+          <h2 id="entryTitle">研究入口 <small>三檔研究標的</small></h2>
+          <div class="body">
+            <form id="entryForm" novalidate>
+              <div class="row">
+                <span class="lbl">研究標的</span>
+                <div class="seg" role="radiogroup" aria-label="研究標的">
+                  {% for code, name in [("2330", "台積電"), ("2317", "鴻海"), ("2454", "聯發科")] %}
+                  <input type="radio" name="ticker" id="t{{ code }}" value="{{ code }}" {% if loop.index == 3 %}checked{% endif %}>
+                  <label for="t{{ code }}"><b>{{ code }}</b>{{ name }}</label>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="row two">
+                <div>
+                  <label class="lbl" for="cutoff">資料截止（Asia/Taipei）</label>
+                  <input type="datetime-local" id="cutoff" value="2026-09-30T17:00" required>
+                </div>
+                <div>
+                  <label class="lbl" for="mode">模式</label>
+                  <select id="mode">
+                    <option value="dual">雙 Agent</option>
+                    <option value="single">單 Agent</option>
+                    <option value="workflow">固定流程</option>
+                  </select>
+                </div>
+              </div>
+              {% if mock_enabled %}
+              <div class="row">
+                <label class="lbl" for="scenario">MOCK 情境（只在測試環境出現）</label>
+                <select id="scenario">
+                  {% for s in scenarios %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+                </select>
+              </div>
+              {% endif %}
+              <div class="actions">
+                <button type="submit" id="submitJob" {% if not mock_enabled %}disabled{% endif %}>送出研究{% if mock_enabled %}（MOCK）{% endif %}</button>
+                <button type="button" class="ghost" id="favToggle" aria-pressed="false">☆ 加入收藏</button>
+              </div>
+              <p class="hint" id="entryHint">
+                {% if mock_enabled %}送出後會建立一個 MOCK job；重複點擊同一組條件只會回到同一個 job。{% else %}研究入口未啟用：正式授權方式由組長決定，目前只開放 MOCK 測試環境。{% endif %}
+                2379、3034 只作 2454 比較參照，不能建立研究 job。
+              </p>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="statusTitle">
+          <h2 id="statusTitle">研究狀態 <small id="statusSource">資料來源：job 資料庫</small></h2>
+          <div class="body" id="jobPanel">
+            <div class="empty">尚未選擇 job。送出研究，或開啟含 <span class="mono">?job=</span> 的連結。</div>
+          </div>
+        </section>
+
+        <section class="panel" id="dashboard" aria-labelledby="dashTitle">
+          <h2 id="dashTitle">收藏與已發布研究 <small>純讀・0 次 LLM</small></h2>
+          <div class="body">
+            <span class="lbl">我的收藏（只存在這個瀏覽器，最多 5 檔）</span>
+            <div class="favs" id="favList"></div>
+            <div class="toolbar">
+              <select id="favAdd" aria-label="加入收藏">
+                <option value="">＋ 加入收藏…</option>
+                <option value="2330">2330 台積電</option>
+                <option value="2317">2317 鴻海</option>
+                <option value="2454">2454 聯發科</option>
+                <option value="2379">2379 瑞昱（比較參照）</option>
+                <option value="3034">3034 聯詠（比較參照）</option>
+              </select>
+              <label><input type="checkbox" id="onlyFav"> 只看收藏</label>
+              <select id="sortOrder" aria-label="排序">
+                <option value="desc">發布時間 新→舊</option>
+                <option value="asc">發布時間 舊→新</option>
+              </select>
+            </div>
+            <div class="reports" id="reportList"><div class="empty">載入已發布研究中…</div></div>
+            <p class="footnote">「資料品質風險」只代表既定資料檢查的結果；「低」不代表股價風險低。時間一律為 Asia/Taipei。</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="panel" aria-labelledby="traceTitle">
+          <h2 id="traceTitle">Agent 動作軌跡 <small>不顯示隱藏思考鏈</small></h2>
+          <div class="body" id="tracePanel">
+            <div class="empty">選擇 job 後，這裡會列出每一步的角色、工具、時間與來源 ID。</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    window.RESEARCH_UI = {
+      mockEnabled: {{ 'true' if mock_enabled else 'false' }},
+      researchTickers: {{ research_tickers | list | tojson }},
+      comparisonOnly: {{ comparison_only | list | tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='research.js') }}"></script>
+</body>
+</html>
