@@ -110,9 +110,33 @@
             <div class="empty">選擇 job 後，這裡會列出每一步的角色、工具、時間與來源 ID。</div>
           </div>
         </section>
+
+        <section class="panel o4" id="reportSection" aria-labelledby="reportTitle">
+          <h2 id="reportTitle">研究報告詳情 <small>只顯示已發布版本</small></h2>
+          <div class="body" id="reportPanel">
+            <div class="empty">從「收藏與已發布研究」點「開啟報告」。主張會標示事實／推論／未知，點來源 ID 可看精確來源版本。</div>
+          </div>
+        </section>
+
       </div>
     </div>
+
+    <section class="panel o5 wide" id="comparisonSection" aria-labelledby="cmpTitle">
+      <h2 id="cmpTitle">2454 季度同業比較 <small>純讀・0 次 LLM</small></h2>
+      <div class="body" id="comparisonPanel">
+        <div class="empty">載入比較資料中…</div>
+      </div>
+    </section>
   </main>
+
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+    <header>
+      <h3 id="drawerTitle">來源</h3>
+      <button type="button" class="ghost" id="drawerClose" aria-label="關閉來源">關閉</button>
+    </header>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
 
   <script>
     window.RESEARCH_UI = {

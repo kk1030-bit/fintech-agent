@@ -217,3 +217,65 @@ def test_status_is_read_from_db_by_another_process(tmp_path, clock):
     run_until_done(writer, clock, job_id)
     reader = make_app(tmp_path, clock).test_client()  # separate app, same DB file
     assert reader.get(f"/api/ui/jobs/{job_id}").get_json()["job"]["status"] == "succeeded"
+
+
+# ----- W04: report detail, source drawer, comparison -----------------------------------
+def test_report_detail_marks_claim_kinds_and_unsourced(ui):
+    body = ui.get("/api/ui/reports/rv-fixture-2454-0001").get_json()
+    claims = {c["claim_id"]: c for c in body["report"]["claims"]}
+    assert {c["kind"] for c in claims.values()} == {"fact", "inference", "unknown"}
+    assert claims["c1"]["unsourced"] is False and claims["c1"]["evidence"] == [{"id": "ev-2454-2026q2-01", "exists": True}]
+    assert {"id": "ev-price-20260930-2454", "exists": False} in claims["c2"]["evidence"]
+    assert claims["c4"]["unsourced"] is True
+    assert body["report"]["synthetic_fixture"] is True
+
+
+def test_unpublished_report_never_leaves_server(ui):
+    assert ui.get("/api/ui/reports/rv-fixture-2454-0002-draft").status_code == 404
+    assert ui.get("/api/ui/reports/does-not-exist").status_code == 404
+    for url in ("/api/ui/published", "/research", "/api/ui/reports/rv-fixture-2454-0001"):
+        assert "DRAFT-SECRET" not in ui.get(url).get_data(as_text=True)
+
+
+def test_evidence_drawer_reports_hash_and_cutoff_honestly(ui):
+    import hashlib
+
+    e = ui.get("/api/ui/evidence/ev-2454-2026q2-01?report=rv-fixture-2454-0001").get_json()["evidence"]
+    assert e["computed_hash"] == hashlib.sha256(e["paragraph"].encode()).hexdigest()
+    assert e["hash_match"] is (e["computed_hash"] == e["content_hash"])  # mismatch is shown, not hidden
+    assert e["cutoff_check"] == "cutoff 前可得"
+    assert "1,272.7" in e["paragraph"]  # claim c1 matches its source text
+
+
+def test_evidence_missing_or_unreferenced(ui):
+    missing = ui.get("/api/ui/evidence/ev-price-20260930-2454")
+    assert missing.status_code == 404 and missing.get_json()["error"] == "no_data"
+    other = ui.get("/api/ui/evidence/src-2454-2026q2-announce")
+    assert other.status_code == 404 and other.get_json()["error"] == "not_referenced"
+
+
+def test_comparison_rules(ui):
+    d = ui.get("/api/ui/comparison/2454").get_json()
+    rows = {r["ticker"]: r for r in d["rows"]}
+    assert list(rows) == ["2454", "2379", "3034", "2330"] and len(rows) <= 4
+    assert rows["2330"]["role"] == "industry_reference" and rows["2330"]["include_in_peer_stats"] is False
+    assert "2330" in d["peer_stats"]["excluded"]
+    s = rows["2454"]
+    assert s["metrics"]["pe_ttm"]["value"] == round(s["price"]["value"] / s["metrics"]["pe_ttm"]["eps_ttm"], 2)
+    assert s["metrics"]["pe_ttm"]["source"] == "tool" and s["metrics"]["pe_ttm"]["consistent"] is True
+    for r in d["rows"]:
+        assert r["financial_period"] and r["price"]["trade_date"] == d["price_as_of"]
+        for name, m in r["metrics"].items():
+            assert m["value"] != 0, f"{r['ticker']} {name} shows 0"
+            if m["value"] is None:
+                assert m["na_reason"]
+    assert rows["2379"]["metrics"]["pe_ttm"]["value"] is None  # only 1 quarter: no TTM, snapshot value not adopted
+    assert rows["2379"]["metrics"]["pe_ttm"]["snapshot_value"] == 19.5
+    assert d["peer_stats"]["pe_ttm"] is None and d["synthetic_fixture"] is True
+
+
+def test_read_only_ui_has_no_model_code():
+    for path in (ROOT / "research_ui").glob("*.py"):
+        imports = [line for line in path.read_text(encoding="utf-8").splitlines()
+                   if line.startswith(("import ", "from "))]
+        assert not [line for line in imports if "provider" in line or "genai" in line or "budget" in line]

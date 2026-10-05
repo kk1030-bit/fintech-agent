@@ -146,6 +146,7 @@
           ${r.snapshot_stale ? badge("快照過期", "b-warn") : ""}
         </div>
         ${r.data_quality_reason ? `<div class="hint" style="margin:0">${esc(r.data_quality_reason)}</div>` : ""}
+        <div class="actions"><button type="button" class="ghost" data-open-report="${esc(r.report_version_id)}">開啟報告</button></div>
       </article>`;
     }).join("");
   }
@@ -325,6 +326,158 @@
     poll();
   }
 
+  /* ---------------- W04: report detail ---------------- */
+  const KIND = { fact: ["事實", "k-fact"], inference: ["推論", "k-inference"], unknown: ["未知", "k-unknown"] };
+  let currentReportId = null;
+
+  function refButtons(list, reportId) {
+    if (!list || !list.length) return "";
+    return list.map(r => `<button type="button" class="ref${r.exists ? "" : " missing"}" data-evidence="${esc(r.id)}"${reportId ? ` data-report="${esc(reportId)}"` : ""} title="${r.exists ? "開啟精確來源版本" : "快照中沒有這個來源片段"}">${esc(r.id)}</button>`).join(" ");
+  }
+
+  async function openReport(rvId) {
+    currentReportId = rvId;
+    const url = new URL(location.href);
+    url.searchParams.set("report", rvId);
+    history.replaceState(null, "", url);
+    const panel = $("#reportPanel");
+    panel.innerHTML = `<div class="empty">讀取報告中…</div>`;
+    try {
+      const body = await getJson(`/api/ui/reports/${encodeURIComponent(rvId)}`);
+      if (rvId !== currentReportId) return;
+      renderReport(body.report);
+      $("#reportSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      panel.innerHTML = `<div class="empty error-box">${err.status === 404 ? "找不到這份已發布報告（未核准版本不公開）。" : esc(err.message)}</div>`;
+    }
+  }
+
+  function renderReport(r) {
+    const risk = RISK_TEXT[r.data_quality_risk] || ["資料品質風險：未提供", "b-neutral"];
+    const outcome = OUTCOME_TEXT[r.research_outcome];
+    const counts = { fact: 0, inference: 0, unknown: 0 };
+    r.claims.forEach(c => { counts[c.kind] = (counts[c.kind] || 0) + 1; });
+    const list = items => items && items.length ? `<ul class="plain">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="hint" style="margin:0">無</p>`;
+    $("#reportPanel").innerHTML = `
+      <div class="actions">
+        <b style="font-size:16px">${esc(r.ticker)} ${esc(r.company)}</b>
+        ${r.synthetic_fixture ? badge("FIXTURE", "b-fixture") : ""}${badge("已發布", "b-ok")}${badge(risk[0], risk[1])}
+        ${outcome ? badge(outcome[0], outcome[1]) : ""}${r.snapshot_stale ? badge("快照過期", "b-warn") : ""}
+      </div>
+      <p class="hint">${esc(r.question)}</p>
+      <dl class="kv">
+        <dt>版本</dt><dd class="mono">${esc(r.report_version_id)}</dd>
+        <dt>資料截止</dt><dd>${fmtTime(r.cutoff_at)}</dd>
+        <dt>財報期</dt><dd>${esc(r.financial_period || "NA（無可用財報）")}</dd>
+        <dt>來源更新</dt><dd>${fmtTime(r.data_updated_at)}${r.snapshot_stale ? "（快照過期，可能非最新）" : ""}</dd>
+        <dt>快照</dt><dd class="mono">${esc(r.source_snapshot_id)}</dd>
+        <dt>模型／prompt</dt><dd>${esc(r.model_id || "無（FIXTURE，非 Agent 產出）")}・${esc(r.prompt_version)}</dd>
+        <dt>PDF</dt><dd>${esc(PDF_TEXT[r.pdf_status] || "未提供")}</dd>
+      </dl>
+      <div class="sub">主張（事實 ${counts.fact}・推論 ${counts.inference}・未知 ${counts.unknown}）</div>
+      <div class="claims">${r.claims.map(c => {
+        const k = KIND[c.kind] || [c.kind, "b-neutral"];
+        return `<div class="claim">
+          <div class="head"><span class="mono">${esc(c.claim_id)}</span>${badge(k[0], k[1])}${c.unsourced ? badge("無來源", "b-bad") : ""}${c.limitations && c.limitations.length ? badge("有限制", "b-warn") : ""}</div>
+          <p>${esc(c.text)}</p>
+          <div class="refs">來源：${c.evidence.length ? refButtons(c.evidence, r.report_version_id) : "無"}</div>
+          ${c.limitations && c.limitations.length ? `<div class="refs">限制：${c.limitations.map(esc).join("；")}</div>` : ""}
+        </div>`;
+      }).join("")}</div>
+      <div class="sub">反向證據</div>${list(r.counter_evidence)}
+      <div class="sub">下一個確認訊號</div>${list(r.next_signals)}
+      <div class="sub">方法與資料限制</div>${list(r.limitations)}
+      <p class="footnote">「無來源」的主張不能當作事實；刪除線的來源 ID 表示快照中找不到該片段。</p>`;
+  }
+
+  /* ---------------- W04: peer comparison ---------------- */
+  const METRICS = [
+    ["pe_ttm", "P/E (TTM)", v => v.toFixed(2) + " 倍"],
+    ["pb", "P/B", v => v.toFixed(2) + " 倍"],
+    ["revenue_yoy_quarter", "單季營收 YoY", v => (v * 100).toFixed(1) + "%"],
+    ["fcf_ttm", "FCF (TTM)", v => v.toLocaleString("zh-TW", { maximumFractionDigits: 1 }) + " 億元"],
+    ["dcf_gap", "DCF 差距", v => (v * 100).toFixed(1) + "%"]
+  ];
+  const ROLE = { subject: ["主體", "b-run"], peer: ["同業", "b-neutral"], industry_reference: ["產業參照・不入平均", "b-warn"] };
+
+  function cell(m, fmt) {
+    if (m.value !== null && m.value !== undefined) {
+      const mismatch = m.consistent === false ? `<div class="cell-na">與 B 快照 ${esc(m.snapshot_value)} 不一致</div>` : "";
+      return `<span class="cell-val">${esc(fmt(m.value))}</span>${mismatch}`;
+    }
+    const snap = m.snapshot_value !== null && m.snapshot_value !== undefined
+      ? `<div class="cell-snap">B 快照值 ${esc(fmt(Number(m.snapshot_value)))}・工具未能重現</div>` : "";
+    return `<span class="cell-val">NA</span><div class="cell-na">${esc(m.na_reason)}</div>${snap}`;
+  }
+
+  async function loadComparison() {
+    const panel = $("#comparisonPanel");
+    try {
+      const d = await getJson("/api/ui/comparison/2454");
+      const ps = d.peer_stats;
+      panel.innerHTML = `
+        <div class="cmp-head">
+          ${d.synthetic_fixture ? badge("FIXTURE／待 B、D 確認", "b-fixture") : ""}
+          <span>報價基準日 ${esc(d.price_as_of)}</span>・<span>資料截止 ${fmtTime(d.cutoff_at)}</span>・<span class="mono">${esc(d.method_version)}</span>
+          ${d.periods_consistent ? "" : badge("財報期不一致", "b-warn")}
+        </div>
+        <table class="cmp-table">
+          <thead><tr><th>公司（角色）</th><th>財報期／收盤</th>${METRICS.map(m => `<th>${m[1]}</th>`).join("")}<th>來源</th></tr></thead>
+          <tbody>${d.rows.map(r => {
+            const role = ROLE[r.role] || [r.role, "b-neutral"];
+            return `<tr class="${r.role === "industry_reference" ? "ref-row" : ""}">
+              <td class="name-cell"><b>${esc(r.ticker)} ${esc(r.name)}</b><br>${badge(role[0], role[1])}</td>
+              <td><span class="lbl-m">財報期／收盤</span><span>${esc(r.financial_period || "NA")}（${esc(r.quarters_available)} 季可得）<br>${r.price ? `${esc(r.price.value)} 元・${esc(r.price.trade_date)}` : `<span class="cell-na">無同日收盤價</span>`}</span></td>
+              ${METRICS.map(m => `<td><span class="lbl-m">${m[1]}</span><span>${cell(r.metrics[m[0]], m[2])}</span></td>`).join("")}
+              <td><span class="lbl-m">來源</span><span>${refButtons(r.evidence) || "無"}</span></td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>
+        <p class="hint"><b>同業平均 P/E：</b>${ps.pe_ttm !== null ? `${esc(ps.pe_ttm)} 倍（n=${esc(ps.n)}）` : `NA・${esc(ps.na_reason)}`}${ps.snapshot_value != null ? `（B 快照值 ${esc(ps.snapshot_value)}，未採用）` : ""}<br>${esc(ps.basis)}；排除：${esc(ps.excluded.join("、"))}</p>
+        ${d.checks.length ? `<details><summary class="hint" style="cursor:pointer">待 B、D 處理的 ${d.checks.length} 項資料問題</summary><ul class="checks">${d.checks.map(c => `<li>${esc(c.ticker)}・${esc(c.metric)}：${esc(c.issue)}</li>`).join("")}</ul></details>` : ""}
+        <p class="footnote">主值只顯示工具可由快照重現的數字；缺值一律 NA＋原因，不以 0 補。P/E、P/B 不使用營收或獲利比代替。</p>`;
+    } catch (err) {
+      panel.innerHTML = `<div class="empty error-box">比較資料讀取失敗：${esc(err.message)}</div>`;
+    }
+  }
+
+  /* ---------------- W04: source drawer ---------------- */
+  let lastFocus = null;
+  function closeDrawer() {
+    $("#drawer").hidden = true; $("#drawerBackdrop").hidden = true;
+    if (lastFocus) lastFocus.focus();
+  }
+  async function openEvidence(id, reportId, trigger) {
+    lastFocus = trigger || null;
+    $("#drawer").hidden = false; $("#drawerBackdrop").hidden = false;
+    $("#drawerTitle").textContent = "來源";
+    $("#drawerBody").innerHTML = `<div class="empty">讀取 ${esc(id)}…</div>`;
+    $("#drawerClose").focus();
+    try {
+      const q = reportId ? `?report=${encodeURIComponent(reportId)}` : "";
+      const { evidence: e } = await getJson(`/api/ui/evidence/${encodeURIComponent(id)}${q}`);
+      $("#drawerBody").innerHTML = `
+        <div class="actions">${e.synthetic_fixture ? badge("FIXTURE", "b-fixture") : ""}${e.hash_match ? badge("hash 吻合", "b-ok") : badge("hash 不符・待 B 核對", "b-bad")}${e.cutoff_check ? badge(e.cutoff_check, e.cutoff_check.startsWith("cutoff 前") ? "b-ok" : "b-bad") : ""}</div>
+        <dl class="kv">
+          <dt>來源版本</dt><dd class="mono">${esc(e.evidence_version_id)}</dd>
+          <dt>可得時間</dt><dd>${fmtTime(e.available_at)}</dd>
+          <dt>原始來源</dt><dd><a href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">${esc(e.source_url)}</a></dd>
+        </dl>
+        <div class="quote">${esc(e.paragraph)}</div>
+        <dl class="kv">
+          <dt>記錄 hash</dt><dd class="mono">${esc(e.content_hash)}</dd>
+          <dt>重算 hash</dt><dd class="mono">${esc(e.computed_hash)}</dd>
+          <dt>算法</dt><dd>${esc(e.hash_algorithm)}</dd>
+        </dl>
+        <p class="footnote">片段取自不可變快照（read_evidence），不是即時網頁；原始來源連結目前是 MOPS 查詢頁，需 B 補精確連結。</p>`;
+    } catch (err) {
+      const msg = err.body && err.body.error === "no_data" ? "快照中沒有這個來源片段 → 「無來源」。引用它的主張不能當作事實。"
+        : err.body && err.body.error === "not_referenced" ? "這個 ID 不是已發布報告或比較面板引用的來源（例如搜尋結果的 source_id），所以不開放。"
+        : err.message;
+      $("#drawerBody").innerHTML = `<p class="mono">${esc(id)}</p><div class="empty error-box">${esc(msg)}</div>`;
+    }
+  }
+
   /* ---------------- wiring ---------------- */
   $("#entryForm").addEventListener("submit", submitJob);
   document.querySelectorAll('input[name="ticker"]').forEach(el => el.addEventListener("change", renderFavorites));
@@ -338,8 +491,21 @@
   $("#onlyFav").addEventListener("change", renderReports);
   $("#sortOrder").addEventListener("change", renderReports);
 
+  document.addEventListener("click", e => {
+    const ref = e.target.closest("[data-evidence]");
+    if (ref) { openEvidence(ref.dataset.evidence, ref.dataset.report || currentReportId, ref); return; }
+    const rep = e.target.closest("[data-open-report]");
+    if (rep) openReport(rep.dataset.openReport);
+  });
+  $("#drawerClose").addEventListener("click", closeDrawer);
+  $("#drawerBackdrop").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
+
   renderFavorites();
   loadPublished();
+  loadComparison();
+  const reportParam = new URL(location.href).searchParams.get("report");
+  if (reportParam) openReport(reportParam);
   const jobParam = new URL(location.href).searchParams.get("job");
   if (jobParam) openJob(jobParam);
 })();
