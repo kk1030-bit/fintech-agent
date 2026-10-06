@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif">
+  <rect width="1200" height="640" fill="#f7faf9"/>
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#10232a">線框 W01｜收藏與已發布研究（新增，F03）</text>
+  <text x="40" y="70" font-size="13" fill="#5f7378">收藏只存本瀏覽器 localStorage（最多 5 代號，不跨裝置）；清單來自伺服器 published metadata；純讀 0 次 LLM</text>
+
+  <rect x="40" y="90" width="1120" height="70" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="60" y="118" font-size="14" font-weight="700" fill="#10232a">我的收藏（3/5）</text>
+  <g font-size="13">
+    <rect x="60" y="128" width="90" height="24" rx="12" fill="#e6f1f6"/><text x="74" y="145" fill="#10445e">★ 2454 ✕</text>
+    <rect x="160" y="128" width="90" height="24" rx="12" fill="#e6f1f6"/><text x="174" y="145" fill="#10445e">★ 2330 ✕</text>
+    <rect x="260" y="128" width="90" height="24" rx="12" fill="#e6f1f6"/><text x="274" y="145" fill="#10445e">★ 3034 ✕</text>
+  </g>
+  <text x="380" y="145" font-size="12" fill="#5f7378">3034 為比較標的：只開比較資料，不開研究 job</text>
+
+  <rect x="40" y="176" width="1120" height="44" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="60" y="203" font-size="13" fill="#10232a">[ ] 只看收藏　　排序：發布時間 新→舊 ▾　　時間：Asia/Taipei</text>
+
+  <g font-size="12" fill="#10232a">
+    <rect x="40" y="230" width="1120" height="36" fill="#eef6f3" stroke="#d7e2df"/>
+    <text x="52" y="253">代號/公司</text><text x="190" y="253">版本</text><text x="330" y="253">狀態</text><text x="420" y="253">資料截止</text>
+    <text x="560" y="253">財報期</text><text x="640" y="253">發布時間</text><text x="770" y="253">來源更新</text><text x="890" y="253">估值狀態</text><text x="990" y="253">資料品質風險</text><text x="1100" y="253">PDF</text>
+    <rect x="40" y="266" width="1120" height="44" fill="#fff" stroke="#d7e2df"/>
+    <text x="52" y="293">2454 聯發科</text><text x="190" y="293">rv-…</text><text x="330" y="293">已發布</text><text x="890" y="293">接近/高於/低於</text><text x="990" y="293">高/中/低</text><text x="1100" y="293">W07</text>
+    <rect x="40" y="310" width="1120" height="44" fill="#fff" stroke="#d7e2df"/>
+    <text x="52" y="337">2317 鴻海</text><text x="890" y="337">無法判定</text><text x="990" y="337" fill="#9b3a2e">高（缺關鍵）</text>
+  </g>
+
+  <rect x="40" y="374" width="1120" height="210" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="60" y="404" font-size="15" font-weight="700" fill="#10232a">必畫狀態</text>
+  <g font-size="13" fill="#5f7378">
+    <text x="60" y="432">載入中・空白（尚無已發布研究）・讀取錯誤・資料過期（標更新時間）</text>
+    <text x="60" y="456">資料不足（insufficient_evidence）・暫停配額（paused_quota）・PDF 未產生／失敗</text>
+    <text x="60" y="480">「資料品質風險：低」只代表既定檢查通過，不代表股價風險低（頁面固定註腳）</text>
+    <text x="60" y="504">手機 390px：每列改卡片；收藏星號與「開始研究」按鈕分開，避免誤觸研究</text>
+    <text x="60" y="528">收藏、排序、開舊報告都不會建立 job；只有授權後按「送出研究」才會</text>
+  </g>
+</svg>

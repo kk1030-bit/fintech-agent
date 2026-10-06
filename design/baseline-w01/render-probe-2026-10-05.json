@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-10-05T02:35:04Z",
+  "captured_at_taipei": "2026-10-05 10:35 (Asia/Taipei)",
+  "origin": "https://fintech-agent-di0z.onrender.com",
+  "method": "Claude 桌面 app 瀏覽器窗格 fetch()；只做不寫入正式資料的請求",
+  "homepage": {"bytes": 11851, "sha256": "f9140eae6282fd3bfbf85c8eebfd3162d29ce54c4b19954211e6fe9be2c29928",
+               "note": "與 repo commit 35f7379 的 templates/dashboard.html 經 Flask 輸出後 sha256 相同"},
+  "cold_start": {"observed": true, "note": "第一次請求顯示 Render 'Application loading'，約 30 秒後才回首頁"},
+  "requests": {
+    "GET /api/stocks": {"status": 500, "ms": 536, "content_type": "text/html", "body": "500 Internal Server Error（Flask 預設頁）"},
+    "POST /api/analyze {stock_code:\"abc\"}": {"status": 400, "ms": 266, "body": "{\"ok\":false,\"error\":\"目前網站版先支援台股數字代號，例如 2330、2317、2454。\"}"},
+    "POST /api/analyze {stock_code:\"\"}": {"status": 400, "ms": 220, "body": "{\"ok\":false,\"error\":\"請輸入股票代號。\"}"},
+    "GET /api/research/jobs/x（無 token）": {"status": 401, "ms": 228, "body": "{\"ok\":false,\"error\":\"unauthorized\"}"},
+    "GET /output/report.pdf": {"status": 404, "ms": 209, "content_type": "text/html"}
+  },
+  "not_executed": [
+    "POST /api/analyze 2330/2317/2454：會抓 FinMind 並寫入正式 Supabase fundamental_data，未經組長授權不執行（同 handoff/baseline.md 原則）",
+    "PDF 產生：Render 預設 ENABLE_PDF_ON_RENDER 未開，略過"
+  ]
+}

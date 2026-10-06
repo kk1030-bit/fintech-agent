@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Noto Sans CJK TC, Microsoft JhengHei, sans-serif">
+  <rect width="1200" height="720" fill="#f7faf9"/>
+  <text x="40" y="44" font-size="22" font-weight="700" fill="#10232a">線框 W01｜2454 季度同業比較面板（新增，F02）</text>
+  <text x="40" y="70" font-size="13" fill="#5f7378">報價基準日 price_as_of・資料截止 cutoff・方法版本・fixture 標籤一律放表頭；0 次 LLM</text>
+
+  <rect x="40" y="90" width="1120" height="64" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="60" y="118" font-size="14" fill="#10232a">報價基準日 2026-09-30｜cutoff 2026-09-30 17:00（Asia/Taipei）｜method peer-v1</text>
+  <rect x="900" y="104" width="240" height="30" rx="15" fill="#fbeedd" stroke="#b57922"/>
+  <text x="918" y="124" font-size="13" fill="#7a5114">FIXTURE／待 B、D 確認</text>
+
+  <g font-size="13" fill="#10232a">
+    <rect x="40" y="170" width="1120" height="40" fill="#eef6f3" stroke="#d7e2df"/>
+    <text x="56" y="195">公司（角色）</text><text x="250" y="195">財報期</text><text x="350" y="195">收盤價</text>
+    <text x="460" y="195">P/E (TTM)</text><text x="580" y="195">P/B</text><text x="680" y="195">單季營收 YoY</text>
+    <text x="820" y="195">FCF</text><text x="920" y="195">DCF 差距</text><text x="1040" y="195">來源</text>
+
+    <rect x="40" y="210" width="1120" height="48" fill="#fff" stroke="#d7e2df"/>
+    <text x="56" y="239">2454 聯發科（主體）</text><text x="250" y="239">2026Q2</text><text x="350" y="239">數值</text>
+    <text x="460" y="239">數值</text><text x="580" y="239">數值</text><text x="680" y="239">數值 / NA+原因</text><text x="820" y="239">數值</text><text x="920" y="239">±15% 狀態</text>
+    <rect x="1036" y="224" width="100" height="24" rx="12" fill="#e6f1f6"/><text x="1050" y="241" fill="#10445e">2 個來源 ›</text>
+
+    <rect x="40" y="258" width="1120" height="48" fill="#fff" stroke="#d7e2df"/>
+    <text x="56" y="287">2379 瑞昱（同業）</text><text x="250" y="287">2026Q2</text><text x="920" y="287" fill="#9b3a2e">NA：缺 DCF 參數</text>
+    <rect x="40" y="306" width="1120" height="48" fill="#fff" stroke="#d7e2df"/>
+    <text x="56" y="335">3034 聯詠（同業）</text><text x="250" y="335">2026Q2</text>
+    <rect x="40" y="354" width="1120" height="48" fill="#f3f3ef" stroke="#d7e2df" stroke-dasharray="6 4"/>
+    <text x="56" y="383">2330 台積電（產業參照・不入平均）</text>
+
+    <rect x="40" y="402" width="1120" height="44" fill="#eef6f3" stroke="#d7e2df"/>
+    <text x="56" y="429">同業平均（僅 2379、3034）</text><text x="460" y="429">平均</text><text x="580" y="429">平均</text>
+  </g>
+
+  <rect x="40" y="466" width="540" height="200" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="60" y="496" font-size="15" font-weight="700" fill="#10232a">每格點開 → 來源抽屜</text>
+  <text x="60" y="524" font-size="13" fill="#5f7378">evidence_version_id、原文片段、來源 URL、available_at、</text>
+  <text x="60" y="546" font-size="13" fill="#5f7378">content_hash 與「hash 是否吻合」、synthetic_fixture</text>
+  <text x="60" y="576" font-size="13" fill="#5f7378">缺值顯示 NA＋原因，不顯示 0；不同財報期要標出</text>
+
+  <rect x="620" y="466" width="540" height="200" rx="8" fill="#fff" stroke="#d7e2df"/>
+  <text x="640" y="496" font-size="15" font-weight="700" fill="#10232a">手機 390px：表格改卡片</text>
+  <rect x="640" y="512" width="220" height="136" rx="8" fill="#f5faf9" stroke="#d7e2df"/>
+  <text x="654" y="536" font-size="13" fill="#10232a">2454 聯發科・主體</text>
+  <text x="654" y="560" font-size="12" fill="#5f7378">P/E …　P/B …</text>
+  <text x="654" y="580" font-size="12" fill="#5f7378">YoY …　FCF …</text>
+  <text x="654" y="600" font-size="12" fill="#5f7378">DCF 差距 …</text>
+  <text x="654" y="628" font-size="12" fill="#10445e">來源 ›</text>
+  <text x="880" y="560" font-size="12" fill="#5f7378">每家公司一張卡，</text>
+  <text x="880" y="580" font-size="12" fill="#5f7378">無橫向捲動</text>
+</svg>
