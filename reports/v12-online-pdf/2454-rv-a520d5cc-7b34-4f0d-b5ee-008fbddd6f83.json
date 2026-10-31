@@ -1,5 +1,5 @@
 {
- "job_id": "4549d120-790c-4559-9163-7ec5b4144ef6",
+ "job_id": "f1b07b81-78dd-4caa-be1a-260bcde9498e",
  "ticker": "2454",
  "cutoff_at": "2026-09-30T09:30:00+00:00",
  "source_snapshot_id": "fin-snap:v1.6-tw-market",
@@ -347,7 +347,8 @@
   "peer_comparison": {
    "price_as_of": "2026-09-30",
    "cutoff_at": "2026-09-30T17:30:00+08:00",
-   "snapshot_version": "v1.8-w06",
+   "peer_snapshot_version": "v1.8-w06",
+   "peer_snapshot_file": "data/v12-peer-snapshot.json",
    "method_version": "ui-peer-v2 / calculate_metrics / valuation-gap-v1.1 (±15%) / data-quality-v1.1",
    "periods_consistent": true,
    "peer_stats": {
@@ -671,7 +672,7 @@
    }
   ],
   "method": {
-   "data_version": "report-data-v1.1",
+   "data_version": "report-data-v1.2",
    "risk_method": "valuation-gap-v1.1 (±15%) / data-quality-v1.1",
    "tools_version": "tools-v12",
    "dcf_assumptions": {

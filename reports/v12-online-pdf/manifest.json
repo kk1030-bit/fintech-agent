@@ -36,20 +36,20 @@
    "run_label": "MOCK"
   },
   {
-   "report_version_id": "rv-d1fafb87-7647-443c-9804-ccf57a32dda1",
-   "job_id": "4549d120-790c-4559-9163-7ec5b4144ef6",
+   "report_version_id": "rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83",
+   "job_id": "f1b07b81-78dd-4caa-be1a-260bcde9498e",
    "version_no": 1,
    "status": "published",
-   "report_hash": "0b614a2ab361568aed95f80e32fe5b37d5e5a8ce02f509628465c87c1f4a4a9b",
-   "pdf_hash": "a7eee608b596b9762e6231fad6fe045642de21436f83faad7d1e24bf58d1707c",
-   "storage_key": "reports/2454/rv-d1fafb87-7647-443c-9804-ccf57a32dda1.pdf",
+   "report_hash": "0d508df5e298fc3eb1e32b2a8f07e0118770b9e724afeafab74d002a00dd2090",
+   "pdf_hash": "7b654bb1cad33be62bf791146c3c340a809032f22707958541449f92e9784bcf",
+   "storage_key": "reports/2454/rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83.pdf",
    "approved_by": "lead (W07-A acceptance script)",
-   "approved_at": "2026-10-28T16:02:11+00:00",
-   "published_at": "2026-10-28T16:02:13+00:00",
+   "approved_at": "2026-10-31T05:13:34+00:00",
+   "published_at": "2026-10-31T05:13:48+00:00",
    "ticker": "2454",
-   "pdf_file": "2454-rv-d1fafb87-7647-443c-9804-ccf57a32dda1.pdf",
-   "json_file": "2454-rv-d1fafb87-7647-443c-9804-ccf57a32dda1.json",
-   "pdf_bytes": 406022,
+   "pdf_file": "2454-rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83.pdf",
+   "json_file": "2454-rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83.json",
+   "pdf_bytes": 407107,
    "run_label": "MOCK"
   }
  ]
