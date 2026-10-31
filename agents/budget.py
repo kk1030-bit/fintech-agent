@@ -107,6 +107,9 @@ class ProjectQuota:
     tpm: int | None = None
     rpd: int | None = None
     other_daily_reserved: int = 0
+    # One-day exception to J, set only by an explicit lead decision (handoff/decisions-2026-10.md); RPD cap still applies.
+    j_exception: int | None = None
+    j_exception_day: str | None = None
 
     def verified(self) -> bool:
         return None not in (self.model_id, self.rpm, self.tpm, self.rpd)
@@ -163,6 +166,8 @@ class BudgetGate:
         # J: a job that has not sent anything today may only start if fewer than J jobs have.
         jobs_today = self.store.jobs_on_day(day_key)
         j_limit = daily_job_limit(q.rpd, q.other_daily_reserved)  # handbook formula divides by 8
+        if q.j_exception is not None and q.j_exception_day == day_key:
+            j_limit = q.j_exception
         if self.job["job_id"] not in jobs_today and len(jobs_today) >= j_limit:
             raise BudgetExceeded("daily_quota", f"今日已有 {len(jobs_today)} 個研究 job，達每日上限 J={j_limit}",
                                  wait_seconds=seconds_until_quota_reset(now))

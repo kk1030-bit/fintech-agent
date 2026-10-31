@@ -1,8 +1,10 @@
 """W03-L: budget gate and six-tool contract (offline, no model calls)."""
 
+from datetime import datetime
+
 import pytest
 
-from agents.budget import BudgetExceeded, BudgetGate, BudgetLimits, ProjectQuota, daily_job_limit, estimate_tokens
+from agents.budget import QUOTA_DAY_TZ, BudgetExceeded, BudgetGate, BudgetLimits, ProjectQuota, daily_job_limit, estimate_tokens
 from agents.contract import validate_job_request
 from agents.tools import TOOL_NAMES, contract_document, dispatch, validate_tool_call, ToolInputError
 from conftest import job_request
@@ -109,6 +111,24 @@ def test_daily_job_limit_J_is_enforced(store):
     assert err.value.reason == "daily_quota" and "J=1" in str(err.value)
     # a job that already sent today may continue
     BudgetGate(store=store, job=first.job, persist=lambda ch: ch, quota=quota).check_project_quota(10)
+
+
+@pytest.mark.parametrize("day_matches", [True, False])
+def test_j_exception_applies_only_on_its_day(store, day_matches):
+    day = datetime.now(QUOTA_DAY_TZ).date().isoformat() if day_matches else "2000-01-01"
+    quota = ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=10, j_exception=2, j_exception_day=day)  # J = 1
+    first = make_gate(store, quota=quota)
+    first.settle(first.reserve_call("researcher", "x", "h"), "ok", 10)
+    first.persist({"status": "succeeded"})
+    job, _ = store.create_job(validate_job_request(job_request(idempotency_key="j2", ticker="2317")), "test-model")
+    _, token = store.claim_next("w2")
+    second = BudgetGate(store=store, job=store.get_job(job["job_id"]), quota=quota,
+                        persist=lambda ch: store.update_job(job["job_id"], "w2", token, ch))
+    if day_matches:
+        second.reserve_call("researcher", "x", "h")
+    else:
+        with pytest.raises(BudgetExceeded):
+            second.reserve_call("researcher", "x", "h")
 
 
 def test_rate_limit_pauses_instead_of_ending_the_job():

@@ -112,7 +112,11 @@ def main() -> None:
     ap.add_argument("--db", help="reuse this tmp/ sqlite file so the daily job cap J spans several runs")
     ap.add_argument("--modes", default="dual", help="comma list of single,dual,workflow; each case runs once per mode")
     ap.add_argument("--model", help="compare another model listed in quota-baseline.json gemini_alternatives_checked")
+    ap.add_argument("--j-exception", type=int, help="lead-approved job cap for one quota day; needs --j-exception-day")
+    ap.add_argument("--j-exception-day", help="Pacific date the exception applies to, e.g. 2026-10-31")
     args = ap.parse_args()
+    if (args.j_exception is None) != (args.j_exception_day is None):
+        sys.exit("--j-exception 與 --j-exception-day 要一起給。")
     cases = load_cases()
     unknown = [c for c in args.cases.split(",") if c not in cases]
     if unknown:
@@ -145,6 +149,7 @@ def main() -> None:
                 sys.exit(f"{args.model} 沒有記錄在 quota-baseline.json，停止。")
             quota = ProjectQuota(model_id=alt["model_id"], rpm=alt["rpm"], tpm=alt["tpm"], rpd=alt["rpd"])
             model_id = args.model
+        quota.j_exception, quota.j_exception_day = args.j_exception, args.j_exception_day
         if model_id != quota.model_id:
             sys.exit(f"GEMINI_MODEL={model_id} 與 quota-baseline.json 的 {quota.model_id} 不一致，停止。")
         stamp = datetime.now().strftime("%Y%m%d%H%M")
