@@ -35,6 +35,14 @@ KEY_FIELDS = {"intrinsic_value_per_share": ("free_cash_flow", "shares_outstandin
 SNAPSHOT_FIELD = {"close_price": "close_price", "eps_ttm": "eps_ttm", "revenue": "revenue"}
 
 
+TIMING_RE = re.compile(r"available_at|captured_at|cutoff|前視|時效|可得時間")
+
+
+def _source_time(ev: dict) -> str | None:
+    """來源的可得時間：官方 available_at 優先，否則 captured_at（與 snapshot._avail 相同）。"""
+    return ev.get("available_at") or ev.get("captured_at")
+
+
 def _t(s: str) -> datetime:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
@@ -118,6 +126,52 @@ def consecutive_quarters(labels: list[str]) -> bool:
     return len(idx) == 4 and all(b - a == 1 for a, b in zip(idx, idx[1:]))
 
 
+def ttm_quarters(fact: dict) -> list[str]:
+    """TTM 的季度清單：quarters 欄位優先；沒填就讀 period（四季清單或 2025Q3-2026Q2 起訖，10/31）。"""
+    if fact.get("quarters"):
+        return fact["quarters"]
+    period = str(fact.get("period") or "")
+    m = re.fullmatch(r"\s*(\d{4})Q([1-4])\s*(?:-|–|—|~|～|至|到)\s*(\d{4})Q([1-4])\s*", period)
+    if not m:
+        return re.findall(r"\d{4}Q[1-4]", period)
+    start, end = int(m[1]) * 4 + int(m[2]) - 1, int(m[3]) * 4 + int(m[4]) - 1
+    if not 0 <= end - start < 4:
+        return [f"{m[1]}Q{m[2]}", f"{m[3]}Q{m[4]}"]
+    return [f"{i // 4}Q{i % 4 + 1}" for i in range(start, end + 1)]
+
+
+def drop_refuted_timing_issues(review: dict, draft: dict, snapshot: dict, cutoff_at: str,
+                               observations: list[dict] | None = None) -> tuple[dict, list[dict]]:
+    """可得時間由程式比對（含時區，10/31）：模型說某主張有時間問題，但它引用的來源全都在 cutoff 前可得，就移除該問題。
+    只處理時間類 issue；引用查不到或不可得時保留。回傳 (覆核結果, 被移除的 issues)。"""
+    evid = {e["evidence_version_id"]: e for e in snapshot.get("evidences", [])}
+    obs = {o["obs_id"]: o for o in (observations or [])}
+    cutoff = _t(cutoff_at)
+
+    def ref_in_time(ref: str) -> bool:
+        if ref in obs:
+            return obs[ref].get("status") == "ok"
+        when = _source_time(evid[ref]) if ref in evid else None
+        return when is not None and _t(when) <= cutoff
+
+    claims = {c["claim_id"]: c for c in draft.get("claims", [])}
+    kept, dropped = [], []
+    for issue in review.get("issues", []):
+        claim = claims.get(issue.get("claim_id"))
+        refs = [*claim.get("evidence_refs", []), *(f["source_ref"] for f in claim.get("facts") or [] if f.get("source_ref"))] if claim else []
+        if TIMING_RE.search(issue.get("reason", "")) and refs and all(ref_in_time(r) for r in refs):
+            dropped.append(issue)
+        else:
+            kept.append(issue)
+    if not dropped:
+        return review, []
+    out = dict(review, issues=kept)
+    if review.get("decision") != "pass" and not any(i.get("severity") == "critical" for i in kept):
+        out["decision"] = "pass"
+        out["decision_summary"] = "模型的時間疑慮經程式比對不成立（來源皆在 cutoff 前可得），沒有其他 critical。"
+    return out, dropped
+
+
 def _iss(claim_id, severity, reason, required, code, outcome="revise"):
     return {"claim_id": claim_id, "severity": severity, "reason": reason, "required_evidence": required,
             "_code": code, "_outcome": outcome}
@@ -163,8 +217,8 @@ def check_draft(draft: dict, snapshot: dict, cutoff_at: str, snapshot_id: str, r
                 continue
             checked_refs.append(r)
             ev = evid[r]
-            if _t(ev["available_at"]) > cutoff:
-                issues.append(_iss(cid, "critical", f"{r} 的 available_at={ev['available_at']} 晚於 cutoff {cutoff_at}（前視）",
+            if _t(_source_time(ev)) > cutoff:
+                issues.append(_iss(cid, "critical", f"{r} 的 available_at={_source_time(ev)} 晚於 cutoff {cutoff_at}（前視）",
                                    f"read_evidence({r}) 核對 available_at；改用 cutoff 前已可得的來源", "lookahead"))
             if INJECTION_RE.search(ev.get("paragraph", "")):
                 issues.append(_iss(cid, "minor", f"{r} 含要求忽略規則或買賣的指令文字，已視為不可信資料",
@@ -241,8 +295,8 @@ def check_draft(draft: dict, snapshot: dict, cutoff_at: str, snapshot_id: str, r
                     issues.append(_iss(cid, "minor", f"前期值 {prior} 沒有獨立來源編號（只出現在快照備註）",
                                        f"get_financial_snapshot(ticker, cutoff) 取得前一季單季值與 available_at，補上前期來源", "prior_no_source", "pass"))
             # --- TTM 要四個連續單季 ---
-            if f.get("period_basis") == "ttm" and not consecutive_quarters(f.get("quarters", [])):
-                issues.append(_iss(cid, "critical", f"TTM 需要四個連續單季，收到 {f.get('quarters')}",
+            if f.get("period_basis") == "ttm" and not consecutive_quarters(ttm_quarters(f)):
+                issues.append(_iss(cid, "critical", f"TTM 需要四個連續單季，收到 {ttm_quarters(f) or f.get('period')}",
                                    f"get_financial_snapshot(ticker, cutoff) 確認連續四個單季都已公告；不足則 {metric} 標 null", "ttm_not_consecutive"))
             # --- 本益比重算 ---
             if metric == "pe_ttm" and f.get("inputs"):

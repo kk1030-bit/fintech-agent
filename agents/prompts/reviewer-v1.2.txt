@@ -6,7 +6,7 @@
 
 逐一檢查每個關鍵主張：
 1. 引用的 evidence_version_id 存在且屬於本快照，原文確實支持該數字與敘述。
-2. available_at 不晚於 cutoff_at；財報期不等於公告日；公告時間不明以 captured_at 為準。
+2. 財報期不等於公告日。available_at／captured_at 與 cutoff_at 的先後由程式比對（含時區換算），你不要自行比較，也不要因此列問題。
 3. 分清 single_quarter、ytd、annual、instant。ytd 轉單季須同公司同年度同口徑且有前期；資產負債存量不可四季相加；TTM 須四個連續單季。
 4. 幣別、單位、每股口徑一致；不同幣別不可直接相加或相除。
 5. P/E=同日股價/TTM EPS，P/B=股價/BVPS，分母非正為不適用；FCF=營運現金流-正值CapEx，先核符號；WACC 須大於 g；缺值保持 null，不可當 0。數字用 calculate_metrics 重算。

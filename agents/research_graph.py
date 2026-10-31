@@ -24,7 +24,7 @@ from langgraph.graph import END, START, StateGraph
 
 from .budget import BudgetExceeded, BudgetGate, BudgetLimits, ProjectQuota
 from .provider import GeminiAdapter, _hash
-from .review_checks import check_draft
+from .review_checks import check_draft, drop_refuted_timing_issues
 from .review_contract import REVIEWER_PROMPT_VERSION, validate_review
 from .snapshot import SimulatedTimeout, SnapshotToolbox
 from .tools import MACRO_SERIES_WHITELIST, args_hash, dispatch
@@ -493,7 +493,12 @@ class ResearchRun:
                 return {"next": "reviewer"}
             review = {"decision": "insufficient", "issues": [], "checked_refs": [], "checked_metric_ids": [],
                       "decision_summary": "Reviewer 輸出不合格，不能視為已核實"}
-        rules = check_draft(draft, self.toolbox.snapshot_view(), job["cutoff_at"], job["source_snapshot_id"],
+        view = self.toolbox.snapshot_view()
+        model_decision = review["decision"]
+        review, refuted = drop_refuted_timing_issues(review, draft, view, job["cutoff_at"], self.observations)
+        if refuted:
+            self.event("reviewer", "timing_issue_refuted", {"model_decision": model_decision, "issues": refuted})
+        rules = check_draft(draft, view, job["cutoff_at"], job["source_snapshot_id"],
                             remaining_calls=self.remaining()["model_calls"], observations=self.observations)["review"]
         final = merge_reviews(review, rules)
         self.reviews.append({"round": len(self.reviews) + 1, "model": review, "rules": rules, "final": final})
