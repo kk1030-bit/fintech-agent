@@ -1,10 +1,19 @@
-# W01-C 指定文獻／文件卡（R01–R08）
+# W02-C 指定文獻／文件卡（R01–R08）
 
 - 任務 ID：W01-C｜製作：C（AI 協助閱讀與整理）｜狀態：**草稿，待組長核准**
-- 本檔屬 W02-C 進度（依修改要求），自 W01 轉入。
+- 本檔屬 W02-C 進度（依修改要求），自 W01 轉入。2026-10-31 依 repo 內組長與 B 的文件第二次修訂。
 - 日期說明：入口經組長於 2026/09/13 核對；本次 AI 協助閱讀日為 **2026/10/31**。Google 文件頁面的「最後更新日」晚於 9/13（見各卡），內容可能已與 9/13 版本不同。
 - 規則：前三張（R01–R03）只根據我實際讀到的摘要頁與論文節選，**不是逐頁讀完全文**，不引用任何效能數字。「全文確認」建議由 C 本人完成後才定稿。
 - 本文件不含任何技術成果或測試結果。技術對應需 B/D/組長核准。
+
+## 來源類型分類
+
+| 類型 | 卡號 | 說明 |
+|---|---|---|
+| 學術論文（arXiv 預印本） | R01、R02、R03 | 未讀完全文，不引用效能數字 |
+| 工程文件（公司文章） | R04 | 工程觀點，非同儕審查 |
+| 官方產品文件 | R05、R06、R07 | Google Gemini API 文件，內容隨時更新 |
+| 專題實作基線 | R08 | 不是外部學術證據 |
 
 ## 閱讀範圍總表
 
@@ -17,7 +26,7 @@
 | R05 | 整頁（日文機器翻譯版） | 英文原頁 |
 | R06 | 整頁 | 帳戶實際額度（頁面本身未列逐模型數字） |
 | R07 | 頁面前半（約至 Gemini 3 Flash Preview 的 Batch 表） | 後段模型與工具計價 |
-| R08 | main 分支首頁與 PROJECT_STATUS.md（**非固定 commit**） | 固定 commit 頁面與各程式檔 |
+| R08 | 固定 commit 53816d4 的檔案清單、PROJECT_STATUS.md、requirements.txt，以及 web_app.py、main.py、report_builder.py 的函式名稱與設定（2026-10-31 以 git 取得該 commit） | 各程式的完整邏輯（C 不判定程式正確性） |
 
 ---
 
@@ -116,6 +125,16 @@
 
 | 欄位 | 內容 |
 |---|---|
+| 作者／機構 | GitHub 帳號 kk1030-bit（專案組長） |
+| 年份／查閱日 | commit `53816d4fb7d178d309cb556bd55fe9f49533e7e5`，提交於 2026-06-15；其中 PROJECT_STATUS.md 標示最後更新 2026-05-30；查閱 2026/10/31（以 git 取得該 commit，非 main 分支） |
+| 類型 | 本專題實作基線，**不是外部學術證據** |
+| 研究問題 | 不適用（程式基線）。PROJECT_STATUS.md 的描述是：使用者輸入台股代號後，系統串接 FinMind 與 Supabase，執行財務分析與 DCF 估值，在網頁輸出每股內在價值、財務摘要、優勢、風險與三張圖表 |
+| 方法摘要 | 檔案清單包含 PROJECT_STATUS.md、web_app.py、main.py、requirements.txt、report_builder.py、macro_agent／（fred_scraper.py、tw_market_scraper.py、uploader.py 等）、valuation_agent／、fundamental_agent／。requirements.txt 列有 pandas、matplotlib、fpdf2、Flask、gunicorn、supabase、FinMind、fredapi 等套件。web_app.py 是 Flask 入口（首頁、股票清單、分析、輸出檔案路由）；main.py 串接 Supabase、DCF 與報告流程，DCF 的 WACC 預設讀環境變數，未設定時為 0.09；report_builder.py 以 fpdf2 與思源黑體產生 PDF。PROJECT_STATUS.md 記載公開網站部署於 Render Free（512MB），為避免記憶體不足預設略過 PDF，PDF 只在本機產出 |
+| 本專題採用點 | 描述「學期初基線」與既有系統限制的依據。V1.2 沿用其中的 Python／Flask、FinMind／FRED、Supabase、DCF、matplotlib、fpdf2（工作包） |
+| 不能據此聲稱的結論 | 不是外部學術證據；不代表目前系統現況（現況以 main 分支程式與當週實測為準）；不以檔名推斷功能存在；C 不判定其程式是否正確 |
+| 原始 URL | https://github.com/kk1030-bit/fintech-agent/tree/53816d4fb7d178d309cb556bd55fe9f49533e7e5 |
+
+---|---|
 | 作者／機構 | GitHub 帳號 kk1030-bit（與專案成員的對應待確認） |
 | 年份／查閱日 | 固定 commit `53816d4fb7d178d309cb556bd55fe9f49533e7e5`，commit 日期未讀到；我讀到的 PROJECT_STATUS.md 標示最後更新 2026-05-30；查閱 2026/10/31 |
 | 類型 | 本專題實作基線，**不是外部學術證據** |
@@ -143,6 +162,20 @@
 - Render Compute：https://render.com/pricing#compute（**未讀**）
 - 用途與核對由組長負責。依工作包，Render 2GB 為計畫，不得寫成已部署。
 
+---
+
+## workflow／single agent／dual agent 比較文稿
+
+本節比較三種設計，供方法章與實驗設計章引用。本專題的三種模式在程式中稱為 workflow、single 與 dual（組長 2026-10-24 核定的三模式校準計畫，handoff/calibration-plan-v1.md）。以下用 R01、R02、R04 的概念說明差異，不引用任何效能數字。
+
+**workflow。** R04 把 workflow 定義為由預先寫好的程式路徑編排 LLM 與工具的系統。每一步做什麼由程式決定，模型不決定下一個動作。這類設計的步驟固定，行為較容易預測，也較容易逐步檢查。R04 指出，對任務明確的情境，workflow 能提供可預測性與一致性。本專題的 workflow 模式，是由程式先執行固定的工具，模型只撰稿一次，不自行選工具（組長，agents/research_graph.py）。
+
+**single agent。** R04 把 agent 定義為由 LLM 動態主導自己的流程與工具使用的系統。R01 說明模型交錯產生思考與行動，並用行動取得的觀察更新後續判斷；R02 說明模型可以自行決定呼叫哪個工具、何時呼叫、傳入什麼參數。本專題的 single 模式，是由單一 Researcher 依目前證據選擇工具、取得觀察並決定何時停止，草稿不經 Reviewer 覆核（組長，handoff/state-machine-v1.md）。R04 提醒，agent 常以延遲與成本換取彈性，並可能累積錯誤，需要停止條件與防護。
+
+**dual agent。** 在 single agent 之外，另設一個覆核角色。本專題的 dual 模式，是 Researcher 負責選工具與取得證據，Reviewer 只能使用讀取、財報、總經與計算四類工具，需要查價或搜尋時退回 Researcher（B 核對；agents/prompts/reviewer-v1.2.txt）。只有 dual 模式的草稿會經過覆核。R04 的「評估者—優化者」模式由一個 LLM 產生、另一個提供評估與回饋，與此結構相似，但兩者是否等同，**須 B／D 核准後才能在正文寫成對應**。
+
+**不能據此宣稱的結論。** 三種設計各有取捨，本節不主張任何一種較準確、較省或可帶來獲利。哪一種在本專題表現較好，只能由 D 的正式實驗（20 保留案 × 3 模式 = 60 次執行）回答。
+
 ## 待處理事項
 
 | 問題 | 提供人 |
@@ -152,5 +185,4 @@
 | R04 兩個 URL 是否同頁 | C／組長 |
 | R05 英文原頁與日文機器翻譯版的差異 | C／組長 |
 | R07 後半頁面 | C |
-| R08 固定 commit 與 main 分支的差異比對 | B |
 | 本專題與 R01、R04 概念的對應是否成立 | B／D |

@@ -1,6 +1,7 @@
 # references.md（APA 第 7 版）
 
-- 屬 W02-C 進度。僅列組長指定的 R01–R08；L1–L10 在 B 指定前不列入。
+- 屬 W02-C 進度。僅列手冊第 08 章指定的 R01–R08；C 自行蒐集的 L1–L10 不列入。
+- 關係摘錄的官方來源（2454、2379 年報）見 docs/v12-source-excerpts.csv，屬資料來源而非文獻，正文引用時以來源表處理。
 - 狀態：**草稿，待組長核准**。標有「待確認」者，是我在頁面上沒有讀到的資訊，不自行補。
 
 **R01**
@@ -29,5 +30,5 @@ Google. (2026, October 28). *Rate limits*. Gemini API. Google AI for Developers.
 Google. (n.d.). *Gemini Developer API pricing*. Google AI for Developers. Retrieved October 31, 2026, from https://ai.google.dev/gemini-api/docs/pricing
 
 **R08**
-kk1030-bit. (n.d.). *fintech-agent* (Commit 53816d4) [Source code]. GitHub. https://github.com/kk1030-bit/fintech-agent/tree/53816d4fb7d178d309cb556bd55fe9f49533e7e5
-（註：作者姓名與 commit 日期待確認。）
+kk1030-bit. (2026). *fintech-agent* (Commit 53816d4) [Source code]. GitHub. https://github.com/kk1030-bit/fintech-agent/tree/53816d4fb7d178d309cb556bd55fe9f49533e7e5
+（註：commit 日期 2026-06-15。作者欄依 GitHub 帳號名稱，是否改用組長真實姓名由組長決定。）
