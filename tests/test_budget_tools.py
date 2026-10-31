@@ -115,9 +115,10 @@ def test_daily_job_limit_J_is_enforced(store):
 
 @pytest.mark.parametrize("day_matches", [True, False])
 def test_j_exception_applies_only_on_its_day(store, day_matches):
-    day = datetime.now(QUOTA_DAY_TZ).date().isoformat() if day_matches else "2000-01-01"
-    quota = ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=10, j_exception=2, j_exception_day=day)  # J = 1
+    quota = ProjectQuota(model_id="test-model", rpm=100, tpm=10**6, rpd=10, j_exception=2, j_exception_day="2000-01-01")  # J = 1
     first = make_gate(store, quota=quota)
+    if day_matches:
+        quota.j_exception_day = datetime.fromtimestamp(first._now(), QUOTA_DAY_TZ).date().isoformat()
     first.settle(first.reserve_call("researcher", "x", "h"), "ok", 10)
     first.persist({"status": "succeeded"})
     job, _ = store.create_job(validate_job_request(job_request(idempotency_key="j2", ticker="2317")), "test-model")
