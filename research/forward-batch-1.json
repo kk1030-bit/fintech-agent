@@ -1,0 +1,43 @@
+{
+  "batch_id": "forward-batch-1",
+  "task": "W07-L",
+  "signal_cutoff_at": "2026-10-30T21:00:00+08:00",
+  "snapshot_file": "data/forward/financial-snapshots-2026-10-30.json",
+  "snapshot_sha256": "3ec3d8a09028d6f8d58bab6e71b613902572a23cee888f25d6b4b731552e5cca",
+  "generated_at": "2026-10-31T19:08:32+08:00",
+  "generated_late": "原訂 10/30 21:00 後執行，實際 10/31 19:08（組長端漏跑），約晚 22 小時；不重抓覆蓋。",
+  "research_tickers": [
+    "2330",
+    "2317",
+    "2454"
+  ],
+  "comparison_only": {
+    "subject": "2454",
+    "peers": [
+      "2379",
+      "3034"
+    ],
+    "industry_reference": "2330",
+    "note": "只 2454 套用固定比較組；2379、3034 只跑確定性比較工具，不建 LLM 任務"
+  },
+  "periods_used": {
+    "2330": "2026Q2",
+    "2317": "2026Q2",
+    "2454": "2026Q2",
+    "2379": "2026Q2",
+    "3034": "2026Q2"
+  },
+  "q3_decision": "組長決定 A（FinMind 未上架改 B）。FinMind 10/31 無 2454 2026Q3 科目，實際採 B，全部 2026Q2。2454 第三季 MOPS 原文仍以證據形式收錄（ev-fwd1-2454-fs-2026q3、ev-fwd1-2454-call-2026q3）。",
+  "direction": "none（組長 10/31 決定；只展示 1／5／20 日報酬，不算命中率）",
+  "signals_file": "evaluation/forward-signals-batch1.json",
+  "no_backfill_check": {
+    "evidence_available_after_cutoff": 0,
+    "quarters_available_after_cutoff": 0,
+    "prices_after_2026_10_30": 0,
+    "note": "captured_at 晚於 cutoff 的 24 筆（22 份 FinMind 原始檔、2 筆 2454 證據）是擷取時間，不是資料可得時間。"
+  },
+  "research_reports": {
+    "status": "未執行",
+    "note": "三檔研究尚未以本快照跑過；手冊要求 W07–W09 各凍結一份研究。"
+  }
+}

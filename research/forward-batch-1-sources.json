@@ -1,8 +1,8 @@
 {
   "batch_id": "forward-batch-1",
-  "version": "v0.4-draft-2026-10-31",
+  "version": "v1.0-frozen-2026-10-31",
   "prepared_by": "Team Member B",
-  "status": "draft：10/30 21:00 前逐項確認並轉為 frozen；確認前不得作為研究輸入",
+  "status": "frozen：快照已產生（2026-10-31 19:08，晚於原訂 10/30 21:00 後執行的時點，見 snapshot.frozen.note）",
   "handbook_rule": "手冊第 06 章：W07–W09 每週五 21:00（台北）三檔各凍結一份研究，共 9 份；截止時間與來源可得時間同存；資料不足照收錄，不補造方向。",
   "signal_cutoff_at": "2026-10-30T21:00:00+08:00",
   "research_tickers": [
@@ -32,9 +32,40 @@
     ],
     "freeze_after_run": "產生後記錄 sha256 與 captured_at 於本檔 snapshot.frozen；之後不得重抓覆蓋（FinMind 會事後修訂，見 2330 2026Q2 於 10/20 改為累計之先例）",
     "frozen": {
-      "sha256": null,
-      "generated_at": null,
-      "raw_files": null
+      "sha256": "3ec3d8a09028d6f8d58bab6e71b613902572a23cee888f25d6b4b731552e5cca",
+      "generated_at": "2026-10-31T19:08:32+08:00",
+      "raw_files": [
+        "data/raw/finmind/TaiwanStockFinancialStatements_2330_74c3a822c42b.json",
+        "data/raw/finmind/TaiwanStockBalanceSheet_2330_78a896d9c7c9.json",
+        "data/raw/finmind/TaiwanStockCashFlowsStatement_2330_6d1581983651.json",
+        "data/raw/finmind/TaiwanStockFinancialStatements_2317_5229282b80dc.json",
+        "data/raw/finmind/TaiwanStockBalanceSheet_2317_46d7b96474b7.json",
+        "data/raw/finmind/TaiwanStockCashFlowsStatement_2317_476006bbf638.json",
+        "data/raw/finmind/TaiwanStockFinancialStatements_2454_a3cd58156f0a.json",
+        "data/raw/finmind/TaiwanStockBalanceSheet_2454_937e40a91d1b.json",
+        "data/raw/finmind/TaiwanStockCashFlowsStatement_2454_6c61e30a189c.json",
+        "data/raw/finmind/TaiwanStockFinancialStatements_2379_9d8c64dda603.json",
+        "data/raw/finmind/TaiwanStockBalanceSheet_2379_82d46e5a0bf6.json",
+        "data/raw/finmind/TaiwanStockCashFlowsStatement_2379_0db685b14c0a.json",
+        "data/raw/finmind/TaiwanStockFinancialStatements_3034_73fea87fc9a1.json",
+        "data/raw/finmind/TaiwanStockBalanceSheet_3034_0d82d615a3c1.json",
+        "data/raw/finmind/TaiwanStockCashFlowsStatement_3034_fb7ba1de7e61.json",
+        "data/raw/finmind/TaiwanStockTradingDate_ALL_fc4947a1da33.json",
+        "data/raw/finmind/TaiwanStockPrice_2330_bdda6ea76d9a.json",
+        "data/raw/finmind/TaiwanStockPrice_2317_99e6b256c67a.json",
+        "data/raw/finmind/TaiwanStockPrice_2454_b50c93fbe6ae.json",
+        "data/raw/finmind/TaiwanStockPrice_2379_841943dbe86b.json",
+        "data/raw/finmind/TaiwanStockPrice_3034_1b7982fdd0de.json",
+        "data/raw/finmind/TaiwanStockPrice_TAIEX_010a6d8c6c50.json"
+      ],
+      "manual_inputs": {
+        "data/manual/announce_times.csv": "5a601ffc382f59041085e9fdf0633ad998d78c077e832ef35d8a213b95dd1b2f",
+        "data/manual/forward/macro-2026-10-30.csv": "d00ecb23cf8367b805186a4d2118bcbe46a70c794dd5dd489efd200083d99578",
+        "data/manual/mops_control.csv": "bee5773e26c33ec6f5acc900c694a8a0eb24298259b7ddf45bca1882a28641fe",
+        "data/manual/balance_overrides.csv": "3df96a96b810e80ebf854fb141011e765ac7b0e7ad77edfb9b41b9d489480bc7",
+        "data/manual/forward/evidence-2026-10-30.csv": "fe65e491a97b376b1510c5058715b1ca1be4ead9926f8832ac13253c9ac9f742"
+      },
+      "note": "實際於 cutoff 後約 22 小時才產生；內容以 cutoff 過濾，但 FinMind 在這段期間的事後修訂無法排除。"
     },
     "frozen_inputs_rule": "data/manual/*.csv 已於 2026-10-25 第一段凍結（cases-v1），前瞻批次不得修改；前瞻新增的總經、新季別公告時間、新季別 MOPS 對帳值放 data/manual/forward/，由 V1.8 的 --macro／--announce-extra／--control 指定；[] 內兩項只在有 2026Q3 董事會通過財報早於 cutoff 時才給。快照輸出 manual_inputs 記錄實際使用之人工檔 sha256_lf"
   },
@@ -298,6 +329,6 @@
     "3034": "至 cutoff 無第三季財報公告（最後一則 115/09/24）",
     "2330": "至 cutoff 無第三季董事會通過財報公告（10/15 為公司自結）",
     "2317": "至 cutoff 無第三季財報公告",
-    "q3_inclusion": "待組長決定：(A) 可得即納入 2379、2454 之 2026Q3；(B) 全部維持 2026Q2"
+    "q3_inclusion": "組長 10/31 決定 A，FinMind 未上架則改 B。10/31 19:08 實跑 A 時 builder 中止（2454 無 2026Q3 EPS 科目），依決定改 B：全部維持 2026Q2，未使用 --announce-extra／--control。"
   }
 }
