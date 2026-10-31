@@ -245,7 +245,9 @@ def build_comparison() -> dict[str, Any]:
         "subject": "2454",
         "price_as_of": price_as_of,
         "cutoff_at": cutoff,
-        "snapshot_version": peer.get("snapshot_version"),
+        "snapshot_version": peer.get("snapshot_version"),  # kept for existing readers; same value as below
+        "peer_snapshot_version": peer.get("snapshot_version"),
+        "peer_snapshot_file": "data/v12-peer-snapshot.json",
         "method_version": METHOD_VERSION,
         "synthetic_fixture": synthetic is not False,
         "data_status": "B 標示為真實資料（synthetic_fixture=false），待 D 覆核" if synthetic is False

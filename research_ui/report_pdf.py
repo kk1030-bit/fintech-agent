@@ -255,7 +255,9 @@ def render_report_pdf(report: dict[str, Any], version: dict[str, Any]) -> bytes:
                 rows, [36, 24, 15, 15, 21, 21, 20, 28], 8, shade)
         ps = peer["peer_stats"]
         d.text(f"同業平均（只用 2379、3034）：P/E {_num(ps['pe_ttm']['value'])}、P/B {_num(ps['pb']['value'])}、"
-               f"單季營收 YoY {_pct(ps['revenue_yoy_quarter']['value'])}；排除 {'、'.join(ps['excluded'])}。報價基準日 {peer['price_as_of']}。", 8.5, color=MUTED)
+               f"單季營收 YoY {_pct(ps['revenue_yoy_quarter']['value'])}；排除 {'、'.join(ps['excluded'])}。報價基準日 {peer['price_as_of']}。"
+               f"同業數字來自同業快照 {peer.get('peer_snapshot_version') or 'NA'}（{peer.get('peer_snapshot_file') or 'NA'}），"
+               f"與本報告主快照 {report.get('source_snapshot_id')} 是兩份不同的檔案。", 8.5, color=MUTED)
     else:
         d.text(f"不適用：{data.get('peer_na_reason') or '—'}", 9.5, color=MUTED)
 

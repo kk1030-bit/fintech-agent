@@ -5,7 +5,9 @@ and 2454 are run to completion, then each goes through the lead's ReportStore ex
 website: create_version → approve(seen hash) → publish (render PDF → Storage → read-back hash).
 Nothing here calls an LLM or the network.
 
-    python scripts/w07_acceptance_pdfs.py [--out reports/v12-online-pdf] [--workdir DIR]
+    python scripts/w07_acceptance_pdfs.py [--out reports/v12-online-pdf] [--workdir DIR] [--tickers 2454]
+
+--tickers regenerates only those reports; the other entries of manifest.json and their files are kept.
 
 Writes <out>/<ticker>-<rv>.pdf (acceptance copies, read back from Storage, not the permanent copy),
 <out>/<ticker>-<rv>.json (the approved report JSON) and <out>/manifest.json.
@@ -56,6 +58,7 @@ def main() -> None:
     ap.add_argument("--out", default=str(ROOT / "reports" / "v12-online-pdf"))
     ap.add_argument("--workdir", default=None,
                     help="keep jobs.sqlite3, reports.sqlite3 and storage/ here (for a local website demo)")
+    ap.add_argument("--tickers", nargs="+", choices=TICKERS, default=list(TICKERS))
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -64,8 +67,16 @@ def main() -> None:
     clock = Clock()
     mock = MockJobs(work / "jobs.sqlite3", ROOT, clock=clock)
     store = ReportStore(work / "reports.sqlite3", LocalStorage(work / "storage"))
+    manifest_path = out / "manifest.json"
+    kept = []
+    if manifest_path.exists() and set(args.tickers) != set(TICKERS):
+        kept = [v for v in json.loads(manifest_path.read_text(encoding="utf-8"))["versions"]
+                if v["ticker"] not in args.tickers]
+    for old in out.glob("*-rv-*.*"):  # replaced reports leave the folder (they stay in git history)
+        if old.name.split("-", 1)[0] in args.tickers:
+            old.unlink()
     manifest = []
-    for ticker in TICKERS:
+    for ticker in args.tickers:
         job = run_mock(mock, clock, ticker)
         v = store.create_version(job, mock.store.list_events(job["job_id"]))
         store.approve(v["report_version_id"], v["report_hash"], approver="lead (W07-A acceptance script)")
@@ -79,6 +90,7 @@ def main() -> None:
                         | {"ticker": ticker, "pdf_file": f"{stem}.pdf", "json_file": f"{stem}.json",
                            "pdf_bytes": len(pdf), "run_label": v["report"]["run_label"]})
         print(ticker, v["report_version_id"], len(pdf), "bytes")
+    manifest = sorted(kept + manifest, key=lambda v: TICKERS.index(v["ticker"]))
     (out / "manifest.json").write_text(json.dumps({"cutoff_at": CUTOFF, "versions": manifest}, ensure_ascii=False,
                                                   indent=1), encoding="utf-8")
     if args.workdir is None:

@@ -226,3 +226,15 @@ def test_pdf_prints_the_close_used_for_the_gap(lead, clock):
     _, v = publish(client, clock, "2330", key="price")
     _, text = pdf_text(client.get(f"/api/ui/reports/{v['report_version_id']}/download").data)
     assert "基準收盤價：2026-09-30 收盤 2,480.00 元" in text and "財報快照（工具結果）" in text
+
+
+def test_peer_snapshot_version_is_named_apart_from_the_main_snapshot(lead, clock):
+    """B (10/31): v1.8-w06 is data/v12-peer-snapshot.json, not the main snapshot fin-snap:v1.6-…"""
+    app, client = lead
+    _, v = publish(client, clock, "2454", key="peer-ver")
+    rep = app.extensions["report_store"].get(v["report_version_id"])["report"]
+    peer = rep["data"]["peer_comparison"]
+    assert "snapshot_version" not in peer and peer["peer_snapshot_version"] == "v1.8-w06"
+    assert peer["peer_snapshot_file"] == "data/v12-peer-snapshot.json"
+    _, text = pdf_text(client.get(f"/api/ui/reports/{v['report_version_id']}/download").data)
+    assert "同業快照 v1.8-w06" in text and rep["source_snapshot_id"] in text

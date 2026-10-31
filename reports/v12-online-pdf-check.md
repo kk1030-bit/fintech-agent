@@ -16,6 +16,15 @@
 
 **請組長注意**：B 也問到 Reviewer 的確定性規則（`agents/review_checks.py`）沒有攔下這類引用錯誤，原 3 份 MOCK 都是 pass。這是組長的檔案，A 沒有修改。
 
+### 2026-10-31 追加（B 第二次核對）
+
+B 核對 10/29 三份報告：引用修正通過，所有來源 resolved、證據 hash 相符，數字與事實表一致。B 提出 2454 的 `peer_comparison.snapshot_version = v1.8-w06` 容易被看成和主快照 `fin-snap:v1.6-tw-market` 對不上。
+
+- 確認：`v1.8-w06` 是 B 的同業快照 `data/v12-peer-snapshot.json` 的 `snapshot_version`（`scripts/build_peer_snapshot.py`，10/22 產生），和主快照是兩份不同的檔案，沒有對不上。
+- 修正：報告欄位改名為 `peer_snapshot_version`，新增 `peer_snapshot_file`（report-data-v1.2）；PDF 與網站在同業表下註明「同業數字來自同業快照 v1.8-w06（data/v12-peer-snapshot.json），與本報告主快照是兩份不同的檔案」。比較面板 API 另外加 `peer_snapshot_version`，舊的 `snapshot_version` 保留給既有讀者。
+- 只重新產生 2454（`rv-a520d5cc-…`，取代 `rv-d1fafb87-…`）。與舊版比對，報告 JSON 只差這兩個欄位與 data_version，所有數字相同。2330、2317 沒有同業表，維持 10/29 版本不變。
+- 這 3 份仍是 MOCK（model_id = null），不能當正式研究結果；LIVE 版產生後由 B 再核。
+
 ## 1. 這次做了什麼
 
 | 步驟 | 做法 | 程式 |
@@ -33,7 +42,7 @@
 |---|---|---|---|---|
 | 2330 | `rv-d407e7cc-cf7c-4c8a-a210-9d3452d75454` | f46a0c5f35c7579e | 585953fcf537426b | reports/2330/rv-d407e7cc-….pdf |
 | 2317 | `rv-915bb95c-9fbd-435b-8fdd-5e83188e24d7` | b8be13bc34f0ab35 | ddb9599b22859456 | reports/2317/rv-915bb95c-….pdf |
-| 2454 | `rv-d1fafb87-7647-443c-9804-ccf57a32dda1` | 0b614a2ab361568a | a7eee608b596b976 | reports/2454/rv-d1fafb87-….pdf |
+| 2454 | `rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83`（10/31） | 0d508df5e298fc3e | 7b654bb1cad33be6 | reports/2454/rv-a520d5cc….pdf |
 
 10/26 的舊版本（rv-b0062cc2、rv-8e567646、rv-393f3b6f）已被取代，留在 git 歷史；B 的 `data/v12-report-audit.csv` W7A 列指向舊檔，需 B 以新檔重核。
 
@@ -45,7 +54,7 @@
 |---|---|---|---|---|---|---|---|---|
 | 2330 | 3 | 401 KB | NotoSansCJKTC（子集） | 1 | 2 | 19/19 | 相符 | 通過 |
 | 2317 | 3 | 238 KB | NotoSansCJKTC（子集） | 1 | 1 | 18/18 | 相符 | 通過 |
-| 2454 | 3 | 397 KB | NotoSansCJKTC（子集） | 1 | 2 | 23/23 | 相符 | 通過 |
+| 2454 | 3 | 398 KB | NotoSansCJKTC（子集） | 1 | 2 | 23/23 | 相符 | 通過 |
 
 「關鍵項目」= 每一條主張、每一條限制、估值狀態、資料品質風險、免責聲明、每季營收、DCF 每股、每個來源 ID、每家同業。全部在 PDF 文字中找得到 → 沒有被截斷的關鍵風險。上限：≤ 10 頁、≤ 5 MB（超過時 `render_report_pdf` 直接拒絕，測試 `test_pdf_over_page_limit_is_refused`）。
 
@@ -83,7 +92,7 @@ F05 必要內容對照（以 2454 為例）：
 
 **限制**：手機測試是桌面 Chromium 的手機模擬，不是實機 iOS Safari／Android Chrome；請組長在部署後用手機實測一次下載。
 
-## 5. 安全與發布規則（測試：`tests/test_online_pdf.py`，14 項）
+## 5. 安全與發布規則（測試：`tests/test_online_pdf.py`，15 項）
 
 - 草稿版本不出現在公開清單、詳情、下載（404）；訪客核准 403。
 - 組長核准必須帶「看過的 hash」；hash 不符 409，不發布。

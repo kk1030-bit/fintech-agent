@@ -22,7 +22,8 @@ from .comparison import DCF_ASSUMPTIONS, build_comparison, company_row_at, quart
 from .risk import METHOD_VERSION as RISK_METHOD
 from .risk import RISK_FOOTNOTE, VALUATION_FOOTNOTE
 
-DATA_VERSION = "report-data-v1.1"  # v1.1: snapshot_id citations resolve to the financial-snapshot tool result
+DATA_VERSION = "report-data-v1.2"  # v1.2: peer_snapshot_version / peer_snapshot_file (was snapshot_version)
+# v1.1: snapshot_id citations resolve to the financial-snapshot tool result
 EXCERPT_CHARS = 200
 METHOD_LIMITATIONS = [
     "所有數字由工具從資料快照計算，沒有 LLM 改寫；缺值以 NA 加原因呈現，不以 0 代替。",
@@ -117,8 +118,9 @@ def build_report_data(job: dict[str, Any]) -> dict[str, Any]:
     if ticker == "2454":
         cmp_ = build_comparison()
         if tools_impl._parse_iso(cmp_["cutoff_at"]) == tools_impl._parse_iso(cutoff):
-            peer = {k: cmp_[k] for k in ("price_as_of", "cutoff_at", "snapshot_version", "method_version",
-                                         "periods_consistent", "peer_stats", "data_status")}
+            # B (10/31): name it peer_snapshot_version so it is not read as the main snapshot (fin-snap:v1.6-…).
+            peer = {k: cmp_[k] for k in ("price_as_of", "cutoff_at", "peer_snapshot_version", "peer_snapshot_file",
+                                         "method_version", "periods_consistent", "peer_stats", "data_status")}
             peer["rows"] = [{k: r[k] for k in ("ticker", "name", "role", "financial_period", "price", "metrics",
                                                "include_in_peer_stats")}
                             | {"valuation": {k: r["valuation"][k] for k in ("status", "label", "gap", "reason")},

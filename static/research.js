@@ -608,11 +608,12 @@
     const peer = t.peer_comparison ? `<div class="sens-wrap"><table class="cmp-table sens-table data-table"><thead><tr><th>公司</th><th>財報期／收盤</th><th>P/E</th><th>P/B</th><th>單季營收 YoY</th><th>FCF TTM</th><th>DCF 差距</th><th>估值狀態</th></tr></thead>
       <tbody>${t.peer_comparison.rows.map(x => { const m = x.metrics; const role = ROLE[x.role] || [x.role, "b-neutral"]; return `<tr class="${x.role === "industry_reference" ? "ref-row" : ""}"><th>${esc(x.ticker)} ${esc(x.name)}<br>${badge(role[0], role[1])}</th><td>${esc(x.financial_period)}<br>${num(x.price && x.price.value)}</td><td>${num(m.pe_ttm.value)}</td><td>${num(m.pb.value)}</td><td>${m.revenue_yoy_quarter.value === null ? "NA" : pct(m.revenue_yoy_quarter.value)}</td><td>${num(m.fcf_ttm.value, 1)}</td><td>${m.dcf_gap.value === null ? "NA" : pct(m.dcf_gap.value)}</td><td>${esc(x.valuation.label)}</td></tr>`; }).join("")}</tbody></table></div>`
       : `<p class="hint">同業比較不適用：${esc(t.peer_na_reason || "—")}</p>`;
+    const peerNote = t.peer_comparison ? `<p class="footnote">同業數字來自同業快照 <span class="mono">${esc(t.peer_comparison.peer_snapshot_version || "NA")}</span>（${esc(t.peer_comparison.peer_snapshot_file || "NA")}），與本報告主快照 <span class="mono">${esc(r.source_snapshot_id)}</span> 是兩份不同的檔案。</p>` : "";
     return `${t.scope_note ? `<p class="hint warn-line">${esc(t.scope_note)}</p>` : ""}
       <div class="sub">季度資料</div>${q}
       <div class="sub">DCF 假設與敏感度</div>
       <p class="hint">WACC ${a.wacc != null ? pct(a.wacc) : "NA"}、g ${a.terminal_growth != null ? pct(a.terminal_growth) : "NA"}、${esc(a.fcf_basis || "")}。${d ? `5 年 FCF 現值 ${num(d.pv_fcf_total)}；終端價值現值 ${num(d.pv_terminal)}；企業價值 ${num(d.enterprise_value)}；淨負債 ${num(d.net_debt)}；股東權益 ${num(d.equity_value)}（億元）。` : ""}</p>${sens}
-      <div class="sub">同業比較</div>${peer}`;
+      <div class="sub">同業比較</div>${peer}${peerNote}`;
   }
 
   /* ---------------- W04: peer comparison ---------------- */
