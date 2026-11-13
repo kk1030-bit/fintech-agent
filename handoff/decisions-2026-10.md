@@ -271,3 +271,15 @@
 - 測試：`tests/test_task_inputs.py`（合成資料：三種模式與 Reviewer 都收到、沒有欄位時不變、`required_elements` 不進 Agent 輸入、`dev-tasks.json` 優先）、`tests/test_formal_runs.py`、`tests/test_export_for_scoring.py`。pytest 470 通過；`build_freeze.py --verify` 一致；`check_cases.py` 0 錯誤。
 - **還沒做、待組長決定**：B 的 `dev-tasks.json` 到了以後在開發集用 `task` 預演（用當日額度），確認沒有問題再鎖定第二段；鎖定日與正式實驗 11/16 起跑日是否順延。第二段沒鎖定前 `formal_runs.py --live` 會拒絕執行。
 - `docs/CR-W05-holdout.md` 第 5 項至此完成（該文件由 B 維護，請 B 更新狀態）。
+
+## 32. 2026-11-13 前瞻第 3 批：聯發科負債覆寫（第一段凍結修訂 2）；結果
+
+- 21:10 排程在凍結快照時中止：「2454 找不到 2025Q2 的科目 BondsPayable」。排程照規定停止，沒有改檔、沒有用 Gemini 額度。
+- **原因**：FinMind 在 11/06 之後新增聯發科 2026Q3 資產負債表，出現應付公司債 111,338,386 千元（前兩批該科目在 FinMind 完全不存在）。快照程式規定「選用負債科目只要出現過，五季都要有值或有覆寫」，缺 2025Q2、2026Q1、2026Q2 而中止。FinMind 同時補上 2025Q3 長期借款 0，與既有覆寫列並存也會中止。
+- **組長決定由組長端直接修**（不經 B）。`data/manual/balance_overrides.csv`：
+  1. 新增 2454 的 2025Q2、2026Q1、2026Q2 應付公司債 0 三列。依據：組長端 11/13 逐表核對 MOPS 聯發科合併資產負債表，115Q1（115/03/31）、115Q2（115/06/30 與比較欄 114/06/30）都沒有應付公司債科目；115Q3 為 111,338,386 千元，114/12/31、114/09/30 為 0，與 FinMind 相符。
+  2. 刪除 2454 2025Q3 長期借款 0 一列（FinMind 已有同值）。
+- 該檔屬第一段凍結的人工檔，以 `build_freeze.py --amend` 記為**修訂 2**（`data-freeze.md` 第八節）。30 案實驗用的 `data/financial-snapshots.json` 沒有重建，案例與 cases_digest 98af84030d45 不變。
+- **第 3 批結果**（Agent v2，researcher-v1.2.5／reviewer-v1.2.2；修正後組長端 21:16 手動執行，晚於截止 16 分鐘）：快照 sha256 64d5032e8bc4；截止後資料檢查 0 筆。2330 insufficient_evidence（researcher_insufficient）、2317 succeeded（review_pass）、2454 succeeded（review_pass）。報告皆未發布，方向 none。
+- **限制（照實記錄）**：五家的 2026Q3 都已在截止前公告，但本批財報仍用到 2026Q2。原因是 FinMind 還沒有鴻海 2026Q3 的損益資料，程式的設計是新季別「全部納入或全部不納入」，於是照既定備案不帶新季別（第 2 批相同）。聯發科 2026Q3 的應付公司債因此沒有進入本批計算。報告引用本批時須註明財報截至 2026Q2。
+- 請 B 事後複核修訂 2 的三列覆寫與 MOPS 依據。pytest 471 通過；`build_freeze.py --verify` 一致。

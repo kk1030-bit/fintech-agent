@@ -1,0 +1,76 @@
+{
+  "batch_id": "forward-batch-3",
+  "task": "W09-L",
+  "signal_cutoff_at": "2026-11-13T21:00:00+08:00",
+  "snapshot_file": "data/forward/financial-snapshots-2026-11-13.json",
+  "snapshot_sha256": "64d5032e8bc473d45bad732ee36cd6d6a276041aa2b7088bdcdd4c5cc860c3ac",
+  "generated_at": "2026-11-13T21:16:11+08:00",
+  "generated_late": null,
+  "sources_file": "research/forward-batch-3-sources.json",
+  "builder_args": [
+    "--cutoff",
+    "2026-11-13T21:00",
+    "--out",
+    "data/forward/financial-snapshots-2026-11-13.json",
+    "--evidence",
+    "data/manual/forward/evidence-2026-11-13.csv",
+    "--macro",
+    "data/manual/forward/macro-2026-11-13.csv"
+  ],
+  "research_tickers": [
+    "2330",
+    "2317",
+    "2454"
+  ],
+  "comparison_only": {
+    "subject": "2454",
+    "peers": [
+      "2379",
+      "3034"
+    ],
+    "industry_reference": "2330",
+    "note": "只 2454 套用固定比較組；2379、3034 只跑確定性比較工具，不建 LLM 任務"
+  },
+  "periods_used": {
+    "2330": "2026Q2",
+    "2317": "2026Q2",
+    "2454": "2026Q2",
+    "2379": "2026Q2",
+    "3034": "2026Q2"
+  },
+  "q3_decision": "B：A 中止（  對帳通過：2330 2026Q2 / 抓取 2317 鴻海 ... / [中止] [2317] 找不到 2026Q3 的科目 EPS（請用 --list-types 確認 type 名稱）），改不帶新季別人工檔",
+  "direction": "none（照第 1 批；只展示 1／5／20 日報酬，不算命中率）",
+  "raw_files": [
+    "data/raw/finmind/TaiwanStockFinancialStatements_2330_bd664151a66d.json",
+    "data/raw/finmind/TaiwanStockBalanceSheet_2330_6490211c4187.json",
+    "data/raw/finmind/TaiwanStockCashFlowsStatement_2330_fe33b94233e1.json",
+    "data/raw/finmind/TaiwanStockFinancialStatements_2317_5229282b80dc.json",
+    "data/raw/finmind/TaiwanStockBalanceSheet_2317_f1f63f47da10.json",
+    "data/raw/finmind/TaiwanStockCashFlowsStatement_2317_c574c90444c9.json",
+    "data/raw/finmind/TaiwanStockFinancialStatements_2454_f3afbc3ed8d0.json",
+    "data/raw/finmind/TaiwanStockBalanceSheet_2454_d13fc9aee296.json",
+    "data/raw/finmind/TaiwanStockCashFlowsStatement_2454_426a6e770f88.json",
+    "data/raw/finmind/TaiwanStockFinancialStatements_2379_763016e60213.json",
+    "data/raw/finmind/TaiwanStockBalanceSheet_2379_3454426dfe8c.json",
+    "data/raw/finmind/TaiwanStockCashFlowsStatement_2379_b2a75c877d97.json",
+    "data/raw/finmind/TaiwanStockFinancialStatements_3034_c2d4fe636764.json",
+    "data/raw/finmind/TaiwanStockBalanceSheet_3034_a423d1246edf.json",
+    "data/raw/finmind/TaiwanStockCashFlowsStatement_3034_a1d082087fb1.json",
+    "data/raw/finmind/TaiwanStockTradingDate_ALL_5b6a0d287c89.json",
+    "data/raw/finmind/TaiwanStockPrice_2330_813591cbb952.json",
+    "data/raw/finmind/TaiwanStockPrice_2317_373e510bffb0.json",
+    "data/raw/finmind/TaiwanStockPrice_2454_8f6cd5ac0549.json",
+    "data/raw/finmind/TaiwanStockPrice_2379_e71a8042532a.json",
+    "data/raw/finmind/TaiwanStockPrice_3034_feee20ccfa89.json",
+    "data/raw/finmind/TaiwanStockPrice_TAIEX_1e2ee8dc835d.json"
+  ],
+  "no_backfill_check": {
+    "evidence_available_after_cutoff": 0,
+    "quarters_available_after_cutoff": 0,
+    "prices_after_2026_11_13": 0
+  },
+  "research_reports": {
+    "status": "未執行",
+    "run": ".venv/bin/python scripts/forward_research.py --live --batch 3"
+  }
+}

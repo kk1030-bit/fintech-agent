@@ -120,3 +120,4 @@
 | 修訂 | 時間 | 變更檔案 | 新增原始檔 | 原因 |
 |---|---|---|---|---|
 | 1 | 2026-11-11T20:25:47+08:00 | `data/financial-snapshots.json`、`agents/tools_impl.py` | 5 個 | 股價由 cutoff 前 5 個交易日補為 2025-01-02 至 2026-09-30 全部交易日（原 5 日數值相同，新增日已逐日與 TWSE 對帳一致）；get_price_window 依視窗日期選原始檔 hash。案例檔未動。決策 25 |
+| 2 | 2026-11-13T21:16:30+08:00 | `data/manual/balance_overrides.csv` | 0 個 | 組長 11/13 決定：data/manual/balance_overrides.csv 修改 2454 的負債覆寫，前瞻第 3 批凍結快照才能產生。FinMind 於 11/06 之後新增聯發科 2026Q3 資產負債表，出現應付公司債（111,338,386 千元，與 MOPS 115Q3 合併資產負債表相符），並補上 2025Q3 長期借款 0。(1) 新增 2025Q2、2026Q1、2026Q2 應付公司債 0 三列：MOPS 115Q1、115Q2 合併資產負債表未列此科目（組長端 11/13 逐表核對）。(2) 刪除 2025Q3 長期借款 0 一列：FinMind 已有同值，程式不允許覆寫與 FinMind 並存。30 案實驗用的凍結快照 data/financial-snapshots.json 沒有重建，數值不變；案例與 cases_digest 不變。 |

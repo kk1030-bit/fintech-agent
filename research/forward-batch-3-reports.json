@@ -1,0 +1,769 @@
+{
+  "batch_id": "forward-batch-3",
+  "signal_cutoff_at": "2026-11-13T21:00:00+08:00",
+  "snapshot_sha256": "64d5032e8bc473d45bad732ee36cd6d6a276041aa2b7088bdcdd4c5cc860c3ac",
+  "commit": "b92ba15",
+  "model_id": "gemini-3.5-flash-lite",
+  "prompt_versions": {
+    "researcher": "researcher-v1.2.5",
+    "reviewer": "reviewer-v1.2.2"
+  },
+  "generated_at": "2026-11-13T13:19:29+00:00",
+  "published": false,
+  "reports": [
+    {
+      "signal_id": "fwd3-2330",
+      "ticker": "2330",
+      "direction": "none",
+      "job_id": "ba3d694c-dd56-464f-9356-a0a228833bb1",
+      "focus_source": "variant",
+      "status": "insufficient_evidence",
+      "stop_reason": "researcher_insufficient",
+      "path": [
+        "researcher:search_evidence→ok",
+        "researcher:read_evidence→ok",
+        "researcher:read_evidence→ok",
+        "researcher:get_financial_snapshot→ok",
+        "researcher:get_price_window→ok"
+      ],
+      "steps": [
+        {
+          "seq": 3,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 1,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2464,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2071,
+          "total_tokens": 2142
+        },
+        {
+          "seq": 4,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "search_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 5,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 2,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 3067,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2754,
+          "total_tokens": 2938
+        },
+        {
+          "seq": 6,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "read_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 7,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "read_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 8,
+          "role": "researcher",
+          "event": "calls_skipped",
+          "tool": null
+        },
+        {
+          "seq": 9,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 3,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 3937,
+          "estimate_under_actual": false,
+          "prompt_tokens": 3568,
+          "total_tokens": 3676
+        },
+        {
+          "seq": 10,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_financial_snapshot",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 11,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_price_window",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 12,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 4,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2857,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2702,
+          "total_tokens": 4198
+        },
+        {
+          "seq": 13,
+          "role": "researcher",
+          "event": "draft_invalid",
+          "tool": null
+        },
+        {
+          "seq": 14,
+          "role": "researcher",
+          "event": "draft",
+          "tool": null,
+          "status": "insufficient"
+        },
+        {
+          "seq": 15,
+          "role": "system",
+          "event": "stop_facts",
+          "tool": null
+        }
+      ],
+      "draft": {
+        "status": "insufficient",
+        "claims": [],
+        "limitations": [
+          "Researcher 未產出合格草稿：不是 JSON 物件"
+        ],
+        "ticker": "2330",
+        "snapshot_id": "snap-fwd3-64d5032e8bc4",
+        "as_of": "2026-11-13T13:00:00+00:00"
+      },
+      "review": null,
+      "budget": {
+        "calls_used": 4,
+        "tool_calls_used": 5,
+        "tokens_observed": 12954,
+        "supplement_rounds": 0,
+        "active_seconds": 8.748
+      }
+    },
+    {
+      "signal_id": "fwd3-2317",
+      "ticker": "2317",
+      "direction": "none",
+      "job_id": "a1238bbc-1bab-4db4-942d-1f4db3972ed3",
+      "focus_source": "variant",
+      "status": "succeeded",
+      "stop_reason": "review_pass",
+      "path": [
+        "researcher:search_evidence→ok",
+        "researcher:get_financial_snapshot→ok",
+        "researcher:get_price_window→ok",
+        "researcher:search_evidence→ok",
+        "researcher:calculate_metrics→ok"
+      ],
+      "steps": [
+        {
+          "seq": 3,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 1,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2464,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2067,
+          "total_tokens": 2143
+        },
+        {
+          "seq": 4,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "search_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 5,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 2,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 3069,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2723,
+          "total_tokens": 2896
+        },
+        {
+          "seq": 6,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_financial_snapshot",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 7,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_price_window",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 8,
+          "role": "researcher",
+          "event": "calls_skipped",
+          "tool": null
+        },
+        {
+          "seq": 9,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 3,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 4081,
+          "estimate_under_actual": false,
+          "prompt_tokens": 3876,
+          "total_tokens": 4002
+        },
+        {
+          "seq": 10,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "search_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 11,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "calculate_metrics",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 12,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 4,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2798,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2610,
+          "total_tokens": 3805
+        },
+        {
+          "seq": 13,
+          "role": "researcher",
+          "event": "draft",
+          "tool": null,
+          "status": "draft"
+        },
+        {
+          "seq": 14,
+          "role": "reviewer",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 5,
+          "prompt_version": "reviewer-v1.2.2",
+          "input_estimate": 3102,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2929,
+          "total_tokens": 3134
+        },
+        {
+          "seq": 15,
+          "role": "reviewer",
+          "event": "review",
+          "tool": null,
+          "final_decision": "pass",
+          "model_decision": "pass",
+          "rules_decision": "pass",
+          "critical": []
+        }
+      ],
+      "draft": {
+        "status": "draft",
+        "decision_summary": "已透過工具取得鴻海 2026 年 9 月單月及 1–9 月累計營收、2026Q2 財務快照、近期股價及計算所得之 TTM P/E 指標，證據充足。",
+        "ticker": "2317",
+        "snapshot_id": "snap-fwd3-64d5032e8bc4",
+        "as_of": "2026-11-13T13:00:00+00:00",
+        "claims": [
+          {
+            "claim_id": "c1",
+            "kind": "fact",
+            "text": "鴻海 2026 年 9 月單月合併營收為 1,158,633,235 仟元，年增 38.42%；1–9 月累計合併營收為 7,669,772,510 仟元，年增 39.53%。",
+            "evidence_refs": [
+              "obs-1"
+            ],
+            "facts": [
+              {
+                "metric": "revenue_monthly",
+                "value": 1158633235,
+                "unit": "仟元",
+                "currency": "TWD",
+                "period": "2026-09",
+                "period_basis": "single_month",
+                "source_ref": "obs-1"
+              },
+              {
+                "metric": "revenue_ytd",
+                "value": 7669772510,
+                "unit": "仟元",
+                "currency": "TWD",
+                "period": "2026-01-2026-09",
+                "period_basis": "ytd",
+                "source_ref": "obs-1"
+              }
+            ],
+            "limitations": []
+          },
+          {
+            "claim_id": "c2",
+            "kind": "fact",
+            "text": "鴻海截至 2026Q2 單季合併營收為 25258.94 億元、營業利益 948.03 億元、歸屬母公司淨利 599.74 億元。",
+            "evidence_refs": [
+              "obs-2"
+            ],
+            "facts": [
+              {
+                "metric": "revenue_single_q",
+                "value": 25258.94,
+                "unit": "100m",
+                "currency": "TWD",
+                "period": "2026Q2",
+                "period_basis": "single_quarter",
+                "source_ref": "obs-2"
+              },
+              {
+                "metric": "operating_income_single_q",
+                "value": 948.03,
+                "unit": "100m",
+                "currency": "TWD",
+                "period": "2026Q2",
+                "period_basis": "single_quarter",
+                "source_ref": "obs-2"
+              },
+              {
+                "metric": "net_income_single_q",
+                "value": 599.74,
+                "unit": "100m",
+                "currency": "TWD",
+                "period": "2026Q2",
+                "period_basis": "single_quarter",
+                "source_ref": "obs-2"
+              }
+            ],
+            "limitations": []
+          },
+          {
+            "claim_id": "c3",
+            "kind": "fact",
+            "text": "依最近交易日收盤價與 TTM EPS 計算之本益比（P/E TTM）為 15.91 倍。",
+            "evidence_refs": [
+              "obs-3",
+              "obs-5"
+            ],
+            "facts": [
+              {
+                "metric": "pe_ttm",
+                "value": 15.91,
+                "unit": "倍",
+                "currency": "TWD",
+                "period": "2025Q3-2026Q2",
+                "period_basis": "ttm",
+                "source_ref": "obs-5"
+              }
+            ],
+            "limitations": []
+          }
+        ],
+        "macro_observations": [
+          "總體經濟環境下，公司營收持續維持顯著年增率，顯示終端需求或特定產品線（如 AI 伺服器等）出貨動能強勁。"
+        ],
+        "fundamental_observations": [
+          "2026 年 9 月與前三季累計營收維持高雙位數年增率。2026Q2 單季營收達 25,258.94 億元，本業與淨利皆維持穩定規模。"
+        ],
+        "valuation_scenarios": [],
+        "positive_channels": [
+          "營收規模持續擴大，月營收與累計營收年增率皆近 40%。"
+        ],
+        "negative_channels": [
+          "2026Q2 單季營業現金流為負（-723.39 億元），資本支出為 451.12 億元，自由現金流為負數。"
+        ],
+        "conflicts": [],
+        "unknowns": [
+          "完整 2026Q3 財報數據尚未全面披露於基礎快照之財務結構中。"
+        ],
+        "next_signals": [
+          "關注後續 2026 年第 3 季正式財務報表的公告與更新。"
+        ],
+        "limitations": [
+          "財務快照部分細項數據以 2026Q2 為最新完整季度，未涵蓋 2026Q3 完整會計報表。"
+        ],
+        "source_refs": [
+          "obs-1",
+          "obs-2",
+          "obs-3",
+          "obs-5"
+        ]
+      },
+      "review": {
+        "decision": "pass",
+        "issues": [],
+        "checked_refs": [
+          "obs-1",
+          "obs-2",
+          "obs-3",
+          "obs-5"
+        ],
+        "checked_metric_ids": [
+          "net_income_single_q",
+          "operating_income_single_q",
+          "pe_ttm",
+          "revenue_monthly",
+          "revenue_single_q",
+          "revenue_ytd"
+        ],
+        "decision_summary": "草稿中的鴻海 2026 年 9 月營收、2026Q2 單季財務數據及 P/E TTM 計算，經核對 obs-1、obs-2、obs-3 與 calculate_metrics 結果（obs-5）一致，未發現口徑或計算錯誤。"
+      },
+      "budget": {
+        "calls_used": 5,
+        "tool_calls_used": 5,
+        "tokens_observed": 15980,
+        "supplement_rounds": 0,
+        "active_seconds": 11.755
+      }
+    },
+    {
+      "signal_id": "fwd3-2454",
+      "ticker": "2454",
+      "direction": "none",
+      "job_id": "50f04881-d6d8-48fb-9c30-29a2d33cdf37",
+      "focus_source": "variant",
+      "status": "succeeded",
+      "stop_reason": "review_pass",
+      "path": [
+        "researcher:search_evidence→ok",
+        "researcher:get_financial_snapshot→ok",
+        "researcher:get_price_window→ok",
+        "reviewer:read_evidence→ok",
+        "reviewer:get_financial_snapshot→ok"
+      ],
+      "steps": [
+        {
+          "seq": 3,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 1,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2464,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2071,
+          "total_tokens": 2133
+        },
+        {
+          "seq": 4,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "search_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 5,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 2,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 3058,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2729,
+          "total_tokens": 2780
+        },
+        {
+          "seq": 6,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_financial_snapshot",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 7,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 3,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 3507,
+          "estimate_under_actual": false,
+          "prompt_tokens": 3201,
+          "total_tokens": 3258
+        },
+        {
+          "seq": 8,
+          "role": "researcher",
+          "event": "tool_call",
+          "tool": "get_price_window",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 9,
+          "role": "researcher",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 4,
+          "prompt_version": "researcher-v1.2.5",
+          "input_estimate": 2363,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2124,
+          "total_tokens": 3319
+        },
+        {
+          "seq": 10,
+          "role": "researcher",
+          "event": "draft",
+          "tool": null,
+          "status": "draft"
+        },
+        {
+          "seq": 11,
+          "role": "reviewer",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 5,
+          "prompt_version": "reviewer-v1.2.2",
+          "input_estimate": 2813,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2606,
+          "total_tokens": 2644
+        },
+        {
+          "seq": 12,
+          "role": "reviewer",
+          "event": "tool_call",
+          "tool": "read_evidence",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 13,
+          "role": "reviewer",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 6,
+          "prompt_version": "reviewer-v1.2.2",
+          "input_estimate": 3102,
+          "estimate_under_actual": false,
+          "prompt_tokens": 2841,
+          "total_tokens": 2892
+        },
+        {
+          "seq": 14,
+          "role": "reviewer",
+          "event": "tool_call",
+          "tool": "get_financial_snapshot",
+          "status": "ok",
+          "reason": null
+        },
+        {
+          "seq": 15,
+          "role": "reviewer",
+          "event": "model_call",
+          "tool": null,
+          "call_number": 7,
+          "prompt_version": "reviewer-v1.2.2",
+          "input_estimate": 3551,
+          "estimate_under_actual": false,
+          "prompt_tokens": 3313,
+          "total_tokens": 3546
+        },
+        {
+          "seq": 16,
+          "role": "reviewer",
+          "event": "review_normalized",
+          "tool": null
+        },
+        {
+          "seq": 17,
+          "role": "reviewer",
+          "event": "review",
+          "tool": null,
+          "final_decision": "pass",
+          "model_decision": "pass",
+          "rules_decision": "pass",
+          "critical": []
+        }
+      ],
+      "draft": {
+        "status": "draft",
+        "decision_summary": "依現有快照之 2026 年 9 月自結合併營收、2026Q2 財務數據與 2026 年 11 月 13 日收盤價完成基本面與估值觀察，部分第三季完整財務報告細節尚待補齊。",
+        "ticker": "2454",
+        "snapshot_id": "snap-fwd3-64d5032e8bc4",
+        "as_of": "2026-11-13T13:00:00+00:00",
+        "claims": [
+          {
+            "claim_id": "c1",
+            "kind": "fact",
+            "text": "聯發科技 2026 年 9 月自結合併營收淨額為 553.99 億元。",
+            "evidence_refs": [
+              "obs-1"
+            ],
+            "facts": [
+              {
+                "metric": "revenue_monthly",
+                "value": 553.99,
+                "unit": "億元",
+                "currency": "TWD",
+                "period": "2026-09",
+                "period_basis": "monthly",
+                "source_ref": "obs-1"
+              }
+            ],
+            "limitations": []
+          },
+          {
+            "claim_id": "c2",
+            "kind": "fact",
+            "text": "聯發科技 2026 年第 2 季單季合併營收為 1521.83 億元，單季歸屬母公司淨利為 243.35 億元。",
+            "evidence_refs": [
+              "obs-2"
+            ],
+            "facts": [
+              {
+                "metric": "revenue_single_q",
+                "value": 1521.83,
+                "unit": "100m",
+                "currency": "TWD",
+                "period": "2026Q2",
+                "period_basis": "single_quarter",
+                "source_ref": "obs-2"
+              },
+              {
+                "metric": "net_income_single_q",
+                "value": 243.35,
+                "unit": "100m",
+                "currency": "TWD",
+                "period": "2026Q2",
+                "period_basis": "single_quarter",
+                "source_ref": "obs-2"
+              }
+            ],
+            "limitations": []
+          },
+          {
+            "claim_id": "c3",
+            "kind": "fact",
+            "text": "聯發科技於 2026 年 11 月 13 日之收盤價為 4120.0 元。",
+            "evidence_refs": [
+              "obs-3"
+            ],
+            "facts": [
+              {
+                "metric": "close_price",
+                "value": 4120.0,
+                "unit": "TWD/share",
+                "currency": "TWD",
+                "period": "2026-11-13",
+                "period_basis": "daily",
+                "source_ref": "obs-3"
+              }
+            ],
+            "limitations": []
+          }
+        ],
+        "macro_observations": [
+          "總體經濟環境持續影響半導體與IC設計產業之終端需求與季節性出貨節奏。"
+        ],
+        "fundamental_observations": [
+          "2026 年 9 月自結合併營收較 8 月減少 13.69%，顯示單月營收動能短期呈現月減。"
+        ],
+        "valuation_scenarios": [
+          "依 2026 年 11 月 13 日收盤價 4120.0 元，結合歷年獲利與最新季度表現進行估值評估。"
+        ],
+        "positive_channels": [
+          "聯發科技在行動運算與多元特殊應用晶片（ASIC）市場具備技術與市佔優勢。"
+        ],
+        "negative_channels": [
+          "全球消費性電子需求波動可能對短期營收與毛利率造成壓力。"
+        ],
+        "conflicts": [],
+        "unknowns": [
+          "2026年第3季合併財務報告之完整明細與實際數字"
+        ],
+        "next_signals": [
+          "聯發科技後續月份營收公告",
+          "2026年第3季正式財務報告與法說會資訊"
+        ],
+        "limitations": [
+          "尚待取得 2026 年第 3 季完整單季財報數據以計算正確之 TTM 數字與本益比。"
+        ],
+        "source_refs": [
+          "obs-1",
+          "obs-2",
+          "obs-3"
+        ]
+      },
+      "review": {
+        "decision": "pass",
+        "issues": [
+          {
+            "claim_id": "c1",
+            "severity": "minor",
+            "reason": "證據之間的「營收」數字不同（{'ev-fwd1-2454-rev-202609': 553.0, 'ev-fwd1-2454-call-2026q3': 1680.0, 'ev-2454-2026q2-01': 1521.0, 'ev-fwd3-2454-rev-202610': 550.0}），草稿沒有在 conflicts 說明",
+            "required_evidence": "read_evidence(ev-fwd1-2454-rev-202609) 與 read_evidence(ev-fwd1-2454-call-2026q3)，把差異與採信理由寫進 conflicts"
+          },
+          {
+            "claim_id": "c1",
+            "severity": "minor",
+            "reason": "證據之間的「毛利率」數字不同（{'ev-fwd1-2454-call-2026q3': 46.3, 'ev-2454-2026q2-01': 46.2}），草稿沒有在 conflicts 說明",
+            "required_evidence": "read_evidence(ev-fwd1-2454-call-2026q3) 與 read_evidence(ev-2454-2026q2-01)，把差異與採信理由寫進 conflicts"
+          }
+        ],
+        "checked_refs": [
+          "ev-fwd1-2454-rev-202609",
+          "obs-1",
+          "obs-2",
+          "obs-3",
+          "snap-2454-2026Q2"
+        ],
+        "checked_metric_ids": [
+          "close_price",
+          "net_income_single_q",
+          "revenue_monthly",
+          "revenue_single_q"
+        ],
+        "decision_summary": "經核對原始證據與財報快照，聯發科技 2026 年 9 月營收 (553.99 億元)、2026Q2 單季營收 (1521.83 億元) 與歸屬母公司淨利 (243.35 億元) 以及 2026 年 11 月 13 日收盤價皆與證據相符，無…"
+      },
+      "budget": {
+        "calls_used": 7,
+        "tool_calls_used": 5,
+        "tokens_observed": 20572,
+        "supplement_rounds": 0,
+        "active_seconds": 12.537
+      }
+    }
+  ]
+}
