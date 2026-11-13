@@ -96,3 +96,19 @@ def test_reveal_needs_both_scores_and_a_matching_key(env):
     (tmp / "key.json").write_text("{}", encoding="utf-8")  # tampered key
     with pytest.raises(SystemExit):
         ex.reveal()
+
+
+def test_export_shows_scorers_the_task_and_the_fields_given_to_the_agent(env, monkeypatch):
+    """Decision 31. Synthetic values: the task and as-is fields the Agent got, and required_elements for scorers only."""
+    tmp, db = env
+    monkeypatch.setattr(fr, "load_holdout", lambda: {c: {**{k: DEV[c][k] for k in fr.RUN_FIELDS if k in DEV[c]}, "task": "合成題目"}
+                                                     for c in CASES})
+    monkeypatch.setattr(ex, "load_case_snapshot", lambda sid: {"task_input": {"n": 1}, "required_elements": ["SYN-EL"],
+                                                               "perturbation": "NOT-EXPORTED"})
+    ex.export(db=db)
+    answers = [json.loads(line) for line in (tmp / "out" / "answers.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert all(a["given_to_agent"] == {"task": "合成題目", "task_input": {"n": 1}} for a in answers)
+    assert all(a["scorer_only"] == {"required_elements": ["SYN-EL"]} for a in answers)
+    md = (tmp / "out" / "answers.md").read_text(encoding="utf-8")
+    assert "給 Agent 的 task：合成題目" in md and "只給評分者的 required_elements（沒有給 Agent）" in md
+    assert "NOT-EXPORTED" not in md

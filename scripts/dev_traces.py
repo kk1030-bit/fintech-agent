@@ -37,9 +37,27 @@ CASES = ["CASE-01", "CASE-04", "CASE-08", "CASE-11", "CASE-15", "CASE-18"]  # de
 OUT = ROOT / "agent" / "researcher-v12-traces.json"
 
 
+DEV_TASKS = ROOT / "evaluation" / "dev-tasks.json"  # B：case_id、task 兩欄；dev-cases.json 與 cases_digest 不動
+
+
 def load_cases() -> dict[str, dict]:
     data = json.loads((ROOT / "evaluation" / "dev-cases.json").read_text(encoding="utf-8"))
-    return {c["case_id"]: c for c in data["cases"]}
+    cases = {c["case_id"]: dict(c) for c in data["cases"]}
+    if DEV_TASKS.exists():  # the question sent to the Agent, read in preference to the variant label
+        rows = json.loads(DEV_TASKS.read_text(encoding="utf-8"))
+        for row in rows["tasks"] if isinstance(rows, dict) else rows:
+            if row["case_id"] in cases and row.get("task"):
+                cases[row["case_id"]]["task"] = row["task"]
+    return cases
+
+
+def focus_for(case: dict) -> tuple[str | None, str]:
+    """(text sent as the job's focus, where it came from). `task` is the question written for the Agent and is
+    sent unchanged (decision 31). Without one, the old condition applies: the variant label, which names what
+    the case tests — results under the two conditions are reported separately."""
+    if case.get("task"):
+        return case["task"], "task"
+    return case.get("title") or case.get("variant"), "variant"
 
 
 def mock_script(case: dict) -> list:
@@ -69,8 +87,9 @@ def mock_script(case: dict) -> list:
 
 
 def run(store: JobStore, case: dict, client, model_id: str, quota: ProjectQuota, tag: str, mode: str = "dual") -> dict:
+    focus, focus_source = focus_for(case)
     req = validate_job_request({"ticker": case["ticker"], "mode": mode, "cutoff_at": case["cutoff_at"],
-                                "source_snapshot_id": case["source_snapshot_id"], "focus": case.get("title") or case.get("variant"),
+                                "source_snapshot_id": case["source_snapshot_id"], "focus": focus,
                                 "idempotency_key": f"{case['case_id']}-{mode}-{tag}" if mode != "dual" else f"{case['case_id']}-{tag}"})
     job, _ = store.create_job(req, model_id)
     handler = make_research_handler(client, model_id, quota)
@@ -87,6 +106,7 @@ def run(store: JobStore, case: dict, client, model_id: str, quota: ProjectQuota,
     events = store.list_events(job["job_id"])
     return {
         "job_id": job["job_id"],
+        "focus_source": focus_source,
         "status": final["status"] if final else None,
         "stop_reason": final.get("stop_reason") if final else None,
         "path": [f"{e['role']}:{e['tool_name']}→{e['detail'].get('status')}" for e in events if e["event_type"] == "tool_call"],

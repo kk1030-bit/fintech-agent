@@ -34,6 +34,9 @@ RESEARCHER_PROMPT = (PROMPTS / "researcher-v1.2.txt").read_text(encoding="utf-8"
 REVIEWER_PROMPT = (PROMPTS / "reviewer-v1.2.txt").read_text(encoding="utf-8")
 RESEARCHER_PROMPT_VERSION = "researcher-v1.2.5"  # 11/11 (lead): unresolved currency/unit/basis conflicts become unknown + conflicts, not insufficient; v1.2.4 (11/10): insufficient drafts list next_signals; v1.2.3 (11/06): no system events, finish with partial facts
 QUESTION = "截至 cutoff_at，總經、基本面與估值證據支持哪些觀察？有哪些反向證據、假設與待確認訊號？"
+# Case snapshot fields handed to the model as-is under their own names, with no added wording (B 11/13, decision 31).
+# Every mode gets them (single, dual incl. the Reviewer, workflow); a snapshot without them adds nothing to the input.
+CASE_INPUT_FIELDS = ("task_input", "draft_under_review")
 DECISION_RANK = {"pass": 0, "revise": 1, "insufficient": 2}
 MAX_STR, MAX_LIST, MAX_RESULT_CHARS = 200, 5, 900
 DROP_KEYS = {"content_hash", "output_hash", "source_id"}  # useless to the model, costly in tokens
@@ -292,13 +295,17 @@ class ResearchRun:
             return used < lim.initial_research_calls
         return True
 
+    def case_inputs(self) -> dict[str, Any]:
+        case = self.toolbox.case or {}
+        return {k: case[k] for k in CASE_INPUT_FIELDS if k in case}
+
     def reviewer_payload(self, draft: dict[str, Any]) -> str:
         """Reviewer's first message, trimmed step by step until it leaves room under the input cap."""
         job = self.job
         cited = {r for c in draft.get("claims", []) for r in c.get("evidence_refs", [])}
         cited |= {f.get("source_ref") for c in draft.get("claims", []) for f in c.get("facts", []) or []}
         trusted = {"job_id": job["job_id"], "source_snapshot_id": job["source_snapshot_id"],
-                   "cutoff_at": job["cutoff_at"], "remaining_budget": self.remaining(),
+                   "cutoff_at": job["cutoff_at"], "remaining_budget": self.remaining(), **self.case_inputs(),
                    "draft_claims": draft.get("claims", []), "conflicts": draft.get("conflicts", []),
                    "limitations": draft.get("limitations", []),
                    "researcher_observations_note": "obs-* 是 Researcher 在本 job 依其權限（六工具，含 get_price_window、"
@@ -405,7 +412,8 @@ class ResearchRun:
         if not self.r_contents:
             trusted = {"job_id": job["job_id"], "ticker": job["ticker"], "cutoff_at": job["cutoff_at"],
                        "source_snapshot_id": job["source_snapshot_id"], "question_version": job["question_version"],
-                       "question": QUESTION, "focus": job.get("focus"), "remaining": self.remaining()}
+                       "question": QUESTION, "focus": job.get("focus"), **self.case_inputs(),
+                       "remaining": self.remaining()}
             self.r_contents.append(types.Content(role="user", parts=[types.Part.from_text(
                 text="可信輸入：" + json.dumps(trusted, ensure_ascii=False))]))
         self.fit_context("researcher", self.r_contents, RESEARCHER_PROMPT)
@@ -565,7 +573,7 @@ class ResearchRun:
             self.save({}, "workflow")
         trusted = {"job_id": job["job_id"], "ticker": job["ticker"], "cutoff_at": job["cutoff_at"],
                    "source_snapshot_id": job["source_snapshot_id"], "question_version": job["question_version"],
-                   "question": QUESTION, "focus": job.get("focus"), "mode": "workflow（固定流程：工具已由程式執行，只撰稿一次）"}
+                   "question": QUESTION, "focus": job.get("focus"), **self.case_inputs(), "mode": "workflow（固定流程：工具已由程式執行，只撰稿一次）"}
         self.r_contents = self.final_turn_contents("researcher", "可信輸入：" + json.dumps(trusted, ensure_ascii=False),
                                                    RESEARCHER_PROMPT)
         resp = self.adapters["researcher"].send("researcher", self.r_contents, RESEARCHER_PROMPT,

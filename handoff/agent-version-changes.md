@@ -118,3 +118,14 @@ prompt 版本不變（researcher-v1.2.5、reviewer-v1.2.2），只改覆核程�
 版本標示：11/12 開發集 CASE-01、04 dual 結果是修正前規則；11/13 起的開發集重跑、W10 正式實驗與前瞻第 3 批用修正後規則。測試 `tests/test_review_pe_coverage.py`（合成資料）。
 
 （11/12 另記：工具結果的完整數字另存於 checkpoint，供盲評匯出，決策 29。不送給模型，不影響 Agent 行為，不列為版本變更。）
+
+## v2 的 11/13 補修：題目怎麼交給 Agent（依 B 11/13 回覆，決策 31）
+
+prompt 版本不變（researcher-v1.2.5、reviewer-v1.2.2），覆核規則不變；改的是送進 Agent 的輸入。
+
+| # | 變更 | 位置 | 影響 |
+|---|---|---|---|
+| 18 | 研究焦點改送案例的 `task`（題目，原樣）；原本送 `variant`（變體名稱，多數直接寫出這題測什麼） | `scripts/dev_traces.py`（`focus_for`）、`scripts/formal_runs.py`（`RUN_FIELDS`） | 保留集 20 案；開發集待 `evaluation/dev-tasks.json` |
+| 19 | 快照的 `task_input`、`draft_under_review` 以同名欄位原樣放進可信輸入（三種模式與 Reviewer） | `agents/research_graph.py`（`CASE_INPUT_FIELDS`） | 只有帶這兩個欄位的快照；其他案例輸入不變 |
+
+**條件不同，不可直接比較**：到 11/12 為止的校準 v1、v2 與煙霧測試都是「送 `variant`」的條件；W10 正式實驗與之後的開發集預演是「送 `task`」的條件。每個 run 的紀錄以 `focus_source` 標示。報告引用時要註明。

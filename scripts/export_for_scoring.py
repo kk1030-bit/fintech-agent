@@ -6,6 +6,7 @@
 輸出（evaluation/formal/scoring-v2/）
 - answers.jsonl：一行一份答卷。answer_id（隨機）、case_id、status（succeeded／insufficient_evidence／failed…）、
   最終草稿（主張、引用、限制、衝突、未知、下一確認訊號、摘要）、主張引用到的工具結果（完整數字，決策 29）與來源原文。
+  另附 given_to_agent（題目 task 與原樣附給 Agent 的 task_input、draft_under_review）、scorer_only（required_elements，沒有給 Agent）。
 - answers.md：同內容的可讀版，逐份列出，方便評分。
 - score-template-B.txt、score-template-D.txt：照 rubric 格式預留每份答卷的評分欄。
 - key-commitment.json：對照表的 sha256。對照表本身（answer_id → run_id、mode）存在組長 Mac 的
@@ -34,7 +35,8 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import formal_runs as fr  # noqa: E402
-from agents.snapshot import SnapshotToolbox  # noqa: E402
+from agents.research_graph import CASE_INPUT_FIELDS  # noqa: E402
+from agents.snapshot import SnapshotToolbox, load_case_snapshot  # noqa: E402
 
 OUT = ROOT / "evaluation" / "formal" / "scoring-v2"
 KEY = ROOT / "tmp" / "formal_v2-scoring-key.json"
@@ -70,7 +72,11 @@ def answer_for(run: dict, job: dict | None, case: dict) -> dict:
                              "paragraph": (ev.get("data") or {}).get("paragraph")})
         else:
             cited_ev.append({"evidence_version_id": ref, "status": "unknown_ref", "paragraph": None})
+    snap = load_case_snapshot(case["source_snapshot_id"]) or {}
     return {"case_id": run["case_id"], "status": run.get("status") or (job or {}).get("status"),
+            # What the Agent was given (same in every mode), then what only the scorer sees (B 11/13, decision 31).
+            "given_to_agent": {"task": case.get("task"), **{k: snap[k] for k in CASE_INPUT_FIELDS if k in snap}},
+            "scorer_only": {k: snap[k] for k in ("required_elements",) if k in snap},
             "draft": {k: draft[k] for k in DRAFT_FIELDS if k in draft} if draft else None,
             "cited_observations": cited_obs, "cited_evidence": cited_ev,
             "note": None if draft else "此 run 沒有產出草稿（失敗或中止），依 rubric 記為作業失敗"}
@@ -127,6 +133,12 @@ def render_md(answers: list[dict]) -> str:
            "兩人獨立評分、先不看對方分數。obs-* 附工具回傳的完整數字結果（決策 29），不必自己重跑工具。", ""]
     for a in answers:
         out += [f"## {a['answer_id']}｜{a['case_id']}｜{a['status']}", ""]
+        for k, v in (a.get("given_to_agent") or {}).items():
+            if v is not None:
+                out.append(f"給 Agent 的 {k}：{v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)}")
+        for k, v in (a.get("scorer_only") or {}).items():
+            out.append(f"只給評分者的 {k}（沒有給 Agent）：{json.dumps(v, ensure_ascii=False)}")
+        out.append("")
         d = a["draft"]
         if not d:
             out += [a["note"], ""]

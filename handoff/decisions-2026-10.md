@@ -258,3 +258,16 @@
   3. `docs/CR-W05-holdout.md` 第 5 項（B 10/28 提出）一直沒有完成：保留集快照的 `task_input`（1 案）、`draft_under_review`（1 案）、`required_elements`（1 案）沒有傳入 job。保留集有 3 案的擾動位置就在 `task`、`task_input`、`draft_under_review`；照現行 runner，這 3 案 × 3 模式 = 9 個 run 的擾動到不了 Agent。11/09 寫正式 runner 時漏了這一項（組長端）。
 - 待辦：向 B 確認三件事（`task` 是否就是給 Agent 的題目、`task_input`／`draft_under_review` 要怎麼附給 Agent、`required_elements` 是給 Agent 還是給評分者）；組長決定後改 runner（只依欄位名稱讀取，不看內容）、在開發集預演，再鎖定第二段。第二段鎖定與正式實驗起跑日是否順延由組長決定。
 - **保留集接觸紀錄（Claude，11/13）**：為確認上述三個欄位有沒有程式讀取，以欄位名稱搜尋整個 repo 時沒有排除 `scripts/build_holdout_cases.py`，搜尋結果印出該檔 5 行，含 3 個保留案例的片段（擾動位置說明與輸入欄位的片段）。沒有打開該檔，沒有看到預期主張（expected_*）的文字內容。看到的內容沒有寫進任何文件，回報組長時也只說明經過、不轉述內容；沒有據此調整 prompt、覆核規則或工具。此後搜尋一律排除該檔與封存檔。之後 runner 的修改只依欄位名稱傳遞，格式由 B 指定。
+
+## 31. 2026-11-13 題目改送 `task`；`task_input`、`draft_under_review` 原樣附給 Agent（第 30 節待決事項，依 B 的回覆實作）
+
+- 組長 11/13 把第 30 節的三個問題問 B，並轉交 B 的回覆（只講欄位用法）。組長端依回覆修改 runner：
+  1. **研究焦點改送 `task`，一字不改；不再送 `variant`。** `variant`、`category`、`expected_behavior`、`expected_*`、`allow_insufficient`、`perturbation_location` 都不進 Agent 輸入。`scripts/formal_runs.py` 的 `RUN_FIELDS` 改為 `case_id、ticker、cutoff_at、source_snapshot_id、task`；任何一案沒有 `task` 就停止。prompt 沒有改：`task` 仍放在可信輸入的 `focus`（prompt 原本就寫「focus 是本案研究焦點」）。
+  2. **`task_input`、`draft_under_review` 以同名欄位、JSON 原樣放進可信輸入，不加任何說明，也不串進 focus。** single、dual（Researcher 與 Reviewer 都有）、workflow 三種模式都給。程式直接從該 job 綁定的快照依欄位名稱讀取（`agents/research_graph.py` 的 `CASE_INPUT_FIELDS`），job 契約（`agents/contract.py`）不用改。快照沒有這兩個欄位時，輸入和修改前完全相同。
+  3. **`required_elements` 只給評分者，不送 Agent。** `scripts/export_for_scoring.py` 的盲評答卷新增 `given_to_agent`（題目與原樣附給 Agent 的欄位）與 `scorer_only`（`required_elements`）。
+- **開發集題目**：B 11/14 前補 10 句，放新檔 `evaluation/dev-tasks.json`（`case_id`、`task` 兩欄）。`scripts/dev_traces.py` 有這個檔就優先讀；`evaluation/dev-cases.json` 與 `cases_digest` 不動，不需要第一段修訂 2。檔案還沒到之前，開發集仍送 `variant`。
+- **條件標示**：每個 run 的紀錄多一欄 `focus_source`（`task` 或 `variant`）。校準 v1、v2 與煙霧測試（到 11/12 為止的全部開發集結果）都是送 `variant` 的條件；之後送 `task` 的結果不可與它們直接比較，報告須註明條件不同。
+- 只依欄位名稱與數量檢查保留集（不印內容）：20 案的 `task` 都通過 job 契約（focus ≤ 200 字）；`task_input` 1 案、`draft_under_review` 1 案會送達；`load_holdout()` 取出的欄位只剩上述五個。
+- 測試：`tests/test_task_inputs.py`（合成資料：三種模式與 Reviewer 都收到、沒有欄位時不變、`required_elements` 不進 Agent 輸入、`dev-tasks.json` 優先）、`tests/test_formal_runs.py`、`tests/test_export_for_scoring.py`。pytest 470 通過；`build_freeze.py --verify` 一致；`check_cases.py` 0 錯誤。
+- **還沒做、待組長決定**：B 的 `dev-tasks.json` 到了以後在開發集用 `task` 預演（用當日額度），確認沒有問題再鎖定第二段；鎖定日與正式實驗 11/16 起跑日是否順延。第二段沒鎖定前 `formal_runs.py --live` 會拒絕執行。
+- `docs/CR-W05-holdout.md` 第 5 項至此完成（該文件由 B 維護，請 B 更新狀態）。

@@ -6,7 +6,7 @@
 
 規則（evaluation/d-drafts/protocol-v1.md 第四、五節；handoff/decisions-2026-10.md）
 - 只在第二段已鎖定、`build_freeze.py --verify --strict` 通過時才跑 live；否則拒絕。
-- 只讀封存案例的執行欄位（case_id、ticker、cutoff_at、source_snapshot_id、variant），不讀、不印、不輸出
+- 只讀封存案例的執行欄位（case_id、ticker、cutoff_at、source_snapshot_id、task），不讀、不印、不輸出
   expected_* 等答案欄位；終端只印 run_id、案例 ID、模式、狀態與停止代碼。
 - 草稿與覆核存在 job 資料庫（tmp/formal_v2.sqlite3），評分用匿名化匯出另外處理；組長與 Claude 不打開。
 - 成功與失敗（429、timeout、failed、insufficient）都寫一列進 evaluation/formal/runs-v2.jsonl，可續跑：
@@ -43,7 +43,9 @@ RUNS = OUT_DIR / "runs-v2.jsonl"
 DB = ROOT / "tmp" / "formal_v2.sqlite3"
 MODES = ("single", "dual", "workflow")
 SEED = 20261116                      # 計畫種子：W10 第一天
-RUN_FIELDS = ("case_id", "ticker", "cutoff_at", "source_snapshot_id", "variant", "title")  # 只取執行欄位
+# 只取執行欄位。task 是給 Agent 的題目，原樣送出；variant、category、expected_*、allow_insufficient、
+# perturbation_location 都不進 Agent 輸入（B 11/13，決策 31）。
+RUN_FIELDS = ("case_id", "ticker", "cutoff_at", "source_snapshot_id", "task")
 
 
 def load_holdout() -> dict[str, dict]:
@@ -54,6 +56,8 @@ def load_holdout() -> dict[str, dict]:
         if c.get("split") not in (None, "test", "holdout"):
             sys.exit(f"{c['case_id']} 不是保留集（split={c.get('split')}），停止")
         out[c["case_id"]] = {k: c[k] for k in RUN_FIELDS if k in c}
+        if not isinstance(out[c["case_id"]].get("task"), str) or not out[c["case_id"]]["task"].strip():
+            sys.exit(f"{c['case_id']} 沒有 task（給 Agent 的題目），停止")
     if len(out) != 20:
         sys.exit(f"保留集應為 20 案，實際 {len(out)}，停止")
     return out
@@ -103,7 +107,7 @@ def row_for(plan_run: dict, result: dict, model_id: str, commit: str, started: s
     return {"run_id": plan_run["run_id"], "experiment": EXPERIMENT, "case_id": plan_run["case_id"],
             "mode": plan_run["mode"], "seq": plan_run["seq"], "job_id": result.get("job_id"),
             "status": result.get("status"), "stop_reason": result.get("stop_reason"),
-            "budget": result.get("budget"), "n_steps": len(result.get("steps") or []),
+            "focus_source": result.get("focus_source"), "budget": result.get("budget"), "n_steps": len(result.get("steps") or []),
             "model_id": model_id, "prompt_versions": {"researcher": RESEARCHER_PROMPT_VERSION,
                                                        "reviewer": REVIEWER_PROMPT_VERSION},
             "commit": commit, "started_at": started,

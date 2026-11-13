@@ -17,7 +17,9 @@ def test_holdout_loader_keeps_execution_fields_only():
     assert len(cases) == 20
     keys = set().union(*[c.keys() for c in cases.values()])
     assert keys <= set(fr.RUN_FIELDS)
-    assert not any(k.startswith("expected") or k in ("allow_insufficient", "perturbation_location") for k in keys)
+    assert not any(k.startswith("expected") or k in ("allow_insufficient", "perturbation_location", "variant", "category")
+                   for k in keys)
+    assert all(isinstance(c.get("task"), str) and c["task"] for c in cases.values())  # 題目原樣送出；這裡只看型別
 
 
 def test_plan_is_fixed_balanced_and_complete():
