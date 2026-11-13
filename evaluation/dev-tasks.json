@@ -1,0 +1,57 @@
+{
+  "dataset": "dev",
+  "version": "dev-tasks-v1",
+  "written_by": "B",
+  "written_at": "2026-11-13",
+  "purpose": "開發集 10 案給 Agent 的題目（task），寫法與保留集 task 一致；供 runner 在開發集預演。evaluation/dev-cases.json 不修改，cases_digest 不變。",
+  "rules": [
+    "一句中性的研究要求，長度與保留集 task 相同區間（17–48 字）",
+    "不含變體名稱、類別、預期行為、預期主張、擾動位置、來源編號或工具名稱，不提示陷阱",
+    "開發集擾動都在快照來源或工具模擬內，task 本身不含擾動",
+    "runner 以 task 原樣作為研究焦點；不再送 variant"
+  ],
+  "source_cases_file": "evaluation/dev-cases.json",
+  "source_cases_sha256": "491a32847e4dfb98333b6904a333c05832d2827bae98372a006588705dc87427",
+  "tasks": [
+    {
+      "case_id": "CASE-01",
+      "task": "說明台積電 2026Q2 營收與毛利率，並引用官方公告。"
+    },
+    {
+      "case_id": "CASE-04",
+      "task": "依 2026-09-30 收盤價與財務快照，說明台積電的本益比。"
+    },
+    {
+      "case_id": "CASE-08",
+      "task": "說明鴻海 2026Q2 合併營收，並與財務快照核對。"
+    },
+    {
+      "case_id": "CASE-11",
+      "task": "說明鴻海 2026Q2 母公司本身的營業收入。"
+    },
+    {
+      "case_id": "CASE-15",
+      "task": "說明聯發科 2026Q2 法說會的營運重點。"
+    },
+    {
+      "case_id": "CASE-18",
+      "task": "說明聯發科 2026Q2 營收與每股盈餘。"
+    },
+    {
+      "case_id": "CASE-19",
+      "task": "說明台積電 2026Q2 營收與淨利，並計算淨利率。"
+    },
+    {
+      "case_id": "CASE-22",
+      "task": "說明台積電 2026Q2 每股盈餘，以及近四季合計每股盈餘。"
+    },
+    {
+      "case_id": "CASE-26",
+      "task": "說明鴻海 2026Q2 營收與獲利，並以公告原文核對。"
+    },
+    {
+      "case_id": "CASE-29",
+      "task": "說明鴻海 2026Q2 財務表現，並核對可取得的公告來源。"
+    }
+  ]
+}
