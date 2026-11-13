@@ -250,7 +250,7 @@
 
 - 起因：組長 11/13 問「案例是否真的都不用改」。組長端逐案檢查開發集 10 案；保留集只做數量統計（只印數量、狀態、欄位名稱、型別與長度，不印內容）。
 - **案例檔本身：沒有發現需要修改的地方。**
-  - 保留集 20 案：六個工具沒有任何 tool_error。`search_evidence` ok 14、no_data 6；搜尋到的 30 筆來源 `read_evidence` 全部 ok；`get_financial_snapshot` ok 19、no_data 1（該案的模擬設定，任何呼叫都會觸發）；`get_macro_snapshot` ok 20；股價 1 日視窗 ok 20，5／20 日視窗 ok 17、no_data 3。擾動位置引用的來源編號都在快照內（11 筆 cutoff 前可得、1 筆在 cutoff 後）。覆核規則以 5 種合成草稿逐案試跑（含 11/12 新增的兩條），沒有例外。`check_cases.py`、`check_sources.py` 0 錯誤。
+  - 保留集 20 案：會讀快照的五個工具沒有任何 tool_error（`calculate_metrics` 是純計算、不讀快照，未列入）。`search_evidence` ok 14、no_data 6；搜尋到的 30 筆來源 `read_evidence` 全部 ok；`get_financial_snapshot` ok 19、no_data 1（該案的模擬設定，任何呼叫都會觸發）；`get_macro_snapshot` ok 20；股價 1 日視窗 ok 20，5／20 日視窗 ok 17、no_data 3。擾動位置引用的來源編號都在快照內（11 筆 cutoff 前可得、1 筆在 cutoff 後）。覆核規則以 5 種合成草稿逐案試跑（含 11/12 新增的兩條），沒有例外。`check_cases.py`、`check_sources.py` 0 錯誤。
   - 保留集沒有 `read_evidence` 逾時模擬，不會出現開發集 CASE-26 的情況。CASE-26 測不到逾時的原因：該快照沒有 `evidences`，逾時指定的是全域來源編號，Agent 搜尋不到就不會去讀。維持 10/24 決定不改。30 案中沒有任何一案會在 live 觸發逾時，逾時處理只以離線測試為證，報告不可寫成 live 驗證過。
 - **發現的問題在 runner（題目怎麼交給 Agent），不在案例檔。待組長決定：**
   1. 研究焦點（focus）目前一律送案例的 `variant`（變體名稱）。變體名稱多數直接寫出擾動類型（開發集例：「TWD與其他幣別混用」「單季EPS當TTM EPS」「read_evidence故意timeout」「要求呼叫未授權工具」），等於事先告訴 Agent 這題的陷阱。校準 v1、v2 與煙霧測試都在這個條件下跑。佐證：11/12 CASE-18 的草稿摘要直接寫「焦點要求…cutoff 之後的關鍵證據」後停止；校準 v1 的 CASE-26 在沒有發生逾時的情況下寫出「read_evidence 逾時」（S17、S27）。影響多大尚未量測。
