@@ -245,3 +245,16 @@
 - 只對此後的 run 有效；正式實驗 11/16 起跑，60 份都會有。
 - B 的第二點（「停止原因與執行紀錄是否一致」盲評時做不了）：組長端建議改為公開對照表（`--reveal`）後由程式逐份比對 stop_reason 與執行紀錄，B、D 抽查；待組長確認。
 - 測試：`tests/test_export_for_scoring.py` 更新；模擬執行（不呼叫模型）確認 checkpoint 存有完整數字。pytest 459 通過。
+
+## 30. 2026-11-13 案例檢查結果；「題目怎麼交給 Agent」待組長決定；保留集接觸紀錄
+
+- 起因：組長 11/13 問「案例是否真的都不用改」。組長端逐案檢查開發集 10 案；保留集只做數量統計（只印數量、狀態、欄位名稱、型別與長度，不印內容）。
+- **案例檔本身：沒有發現需要修改的地方。**
+  - 保留集 20 案：六個工具沒有任何 tool_error。`search_evidence` ok 14、no_data 6；搜尋到的 30 筆來源 `read_evidence` 全部 ok；`get_financial_snapshot` ok 19、no_data 1（該案的模擬設定，任何呼叫都會觸發）；`get_macro_snapshot` ok 20；股價 1 日視窗 ok 20，5／20 日視窗 ok 17、no_data 3。擾動位置引用的來源編號都在快照內（11 筆 cutoff 前可得、1 筆在 cutoff 後）。覆核規則以 5 種合成草稿逐案試跑（含 11/12 新增的兩條），沒有例外。`check_cases.py`、`check_sources.py` 0 錯誤。
+  - 保留集沒有 `read_evidence` 逾時模擬，不會出現開發集 CASE-26 的情況。CASE-26 測不到逾時的原因：該快照沒有 `evidences`，逾時指定的是全域來源編號，Agent 搜尋不到就不會去讀。維持 10/24 決定不改。30 案中沒有任何一案會在 live 觸發逾時，逾時處理只以離線測試為證，報告不可寫成 live 驗證過。
+- **發現的問題在 runner（題目怎麼交給 Agent），不在案例檔。待組長決定：**
+  1. 研究焦點（focus）目前一律送案例的 `variant`（變體名稱）。變體名稱多數直接寫出擾動類型（開發集例：「TWD與其他幣別混用」「單季EPS當TTM EPS」「read_evidence故意timeout」「要求呼叫未授權工具」），等於事先告訴 Agent 這題的陷阱。校準 v1、v2 與煙霧測試都在這個條件下跑。佐證：11/12 CASE-18 的草稿摘要直接寫「焦點要求…cutoff 之後的關鍵證據」後停止；校準 v1 的 CASE-26 在沒有發生逾時的情況下寫出「read_evidence 逾時」（S17、S27）。影響多大尚未量測。
+  2. 保留集案例檔每案有 `task` 欄位（20 案皆為字串，17–48 字，各不相同，都不含變體名稱），開發集沒有這個欄位。`scripts/formal_runs.py` 的 `RUN_FIELDS` 沒有讀 `task`，正式實驗照現況送給 Agent 的會是 `variant`。
+  3. `docs/CR-W05-holdout.md` 第 5 項（B 10/28 提出）一直沒有完成：保留集快照的 `task_input`（1 案）、`draft_under_review`（1 案）、`required_elements`（1 案）沒有傳入 job。保留集有 3 案的擾動位置就在 `task`、`task_input`、`draft_under_review`；照現行 runner，這 3 案 × 3 模式 = 9 個 run 的擾動到不了 Agent。11/09 寫正式 runner 時漏了這一項（組長端）。
+- 待辦：向 B 確認三件事（`task` 是否就是給 Agent 的題目、`task_input`／`draft_under_review` 要怎麼附給 Agent、`required_elements` 是給 Agent 還是給評分者）；組長決定後改 runner（只依欄位名稱讀取，不看內容）、在開發集預演，再鎖定第二段。第二段鎖定與正式實驗起跑日是否順延由組長決定。
+- **保留集接觸紀錄（Claude，11/13）**：為確認上述三個欄位有沒有程式讀取，以欄位名稱搜尋整個 repo 時沒有排除 `scripts/build_holdout_cases.py`，搜尋結果印出該檔 5 行，含 3 個保留案例的片段（擾動位置說明與輸入欄位的片段）。沒有打開該檔，沒有看到預期主張（expected_*）的文字內容。看到的內容沒有寫進任何文件，回報組長時也只說明經過、不轉述內容；沒有據此調整 prompt、覆核規則或工具。此後搜尋一律排除該檔與封存檔。之後 runner 的修改只依欄位名稱傳遞，格式由 B 指定。
