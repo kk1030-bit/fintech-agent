@@ -110,6 +110,42 @@ def test_no_fallback_to_the_case_snapshot_when_the_tool_gave_the_agent_nothing()
     assert ttm_flags(pe_draft(), view) == []  # 草稿自己寫出連續四季的照舊（數字是否出現在工具結果由另一條規則檢查）
 
 
+# ----- 11/14（決策 38）：本益比沒附計算輸入時，數值必須出現在這個 job 的某個工具結果裡 -----
+def calc_obs(value=28.74, status="ok", with_data=True):
+    o = {"obs_id": "obs-3", "tool_name": "calculate_metrics", "status": status, "digest": "", "brief": f'{{"result_value": {value}}}'}
+    if with_data:
+        o["data"] = {"result_value": value, "is_applicable": True, "operation": "pe_ttm"}
+    return o
+
+
+def pe_value_flags(pe_value, observations, view=None, **fact_extra):
+    d = pe_draft()
+    d["claims"][1]["facts"][0].update(value=pe_value, source_ref="obs-3", **fact_extra)
+    d["claims"][1]["evidence_refs"] = ["obs-3"]
+    view = view or {"ticker": "2330", "evidences": [], "tool_numbers": [86.28, 2480.0], "tool_ttm": {"ttm_periods": Q4, "eps_ttm": 86.28}}
+    issues = check_draft(d, view, CUTOFF, "snap", observations=observations, system_events=set())["review"]["issues"]
+    return [i["claim_id"] for i in issues if "沒有出現在本 job 的任何工具結果" in i["reason"]]
+
+
+@pytest.mark.parametrize("pe_value,flagged", [(28.74, False), (28.7, False), (29, False),   # 計算結果與它的四捨五入寫法
+                                              (28.8, True), (28.75, True), (12.34, True), (2874, True)])
+def test_pe_value_must_come_from_a_tool_result(pe_value, flagged):
+    assert pe_value_flags(pe_value, [calc_obs()]) == (["c2"] if flagged else [])
+
+
+def test_pe_value_rule_only_counts_ok_tool_results_and_reads_old_records_without_data():
+    assert pe_value_flags(28.74, [calc_obs(status="tool_error")]) == ["c2"]
+    assert pe_value_flags(28.74, [calc_obs(with_data=False)]) == []          # 11/12 以前的紀錄沒有 data，改讀摘要
+    assert pe_value_flags(28.74, []) == ["c2"]                               # 這個 job 沒有任何工具結果
+
+
+def test_pe_value_rule_skips_what_other_rules_cover():
+    assert pe_value_flags(12.34, None) == []                                                       # 沒有工具紀錄可查時不判
+    assert pe_value_flags(12.34, [calc_obs()], inputs={"price": 2480.0, "eps_ttm": 86.28}) == []   # 附了輸入：由重算規則處理
+    view = {"ticker": "2330", "evidences": [], "tool_numbers": [86.28, 28.74], "tool_ttm": {"ttm_periods": Q4, "eps_ttm": 86.28}}
+    assert pe_value_flags(28.74, [], view=view) == []                                              # 財報／股價工具回傳過這個數字
+
+
 def obs(*tools):
     return [{"obs_id": f"obs-{i}", "tool_name": t, "status": "ok", "brief": "", "digest": ""} for i, t in enumerate(tools, 1)]
 

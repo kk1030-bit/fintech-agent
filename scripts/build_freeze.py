@@ -75,6 +75,8 @@ AGENT_FILES = [
     "agents/review_contract.py", "agents/research_graph.py", "agents/provider.py",
     # 11/09 補列：v2 的輸入／token 上限在 budget.py；store、worker 決定 job 狀態與逾時（組長 11/09）
     "agents/budget.py", "agents/store.py", "agents/worker.py",
+    # 11/14 補列：送什麼題目給 Agent、讀封存檔的哪些欄位，由 runner 決定（決策 31、38，組長 11/14）
+    "scripts/dev_traces.py", "scripts/formal_runs.py",
 ]
 PROMPT_FILES = ["agents/prompts/researcher-v1.2.txt", "agents/prompts/reviewer-v1.2.txt"]
 STAGE1_GROUPS = ("data_files", "tool_files", "rubric_files", "manual_files")

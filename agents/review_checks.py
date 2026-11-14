@@ -147,6 +147,29 @@ def value_matches(value: float, candidates: list[float]) -> bool:
     return False
 
 
+def numeric_leaves(value) -> list[float]:
+    """工具結果裡的每個數值（不含布林與字串，所以日期、季度不會被當成數字）。"""
+    if isinstance(value, bool) or value is None:
+        return []
+    if isinstance(value, (int, float)):
+        return [float(value)]
+    if isinstance(value, dict):
+        return [n for v in value.values() for n in numeric_leaves(v)]
+    if isinstance(value, (list, tuple)):
+        return [n for v in value for n in numeric_leaves(v)]
+    return []
+
+
+def rounds_to(value: float, candidates: list[float]) -> bool:
+    """value 是某個候選數字依 value 自己的小數位數四捨五入的結果（28.7、29 都算 28.74 的寫法；28.8、28.75 不算）。
+    不做單位換算。"""
+    v = float(value)
+    text = format(v, ".10g")
+    decimals = len(text.split(".")[1]) if "." in text and "e" not in text else 0
+    tol = 0.5 * 10 ** -decimals + 1e-9
+    return any(abs(float(n) - v) <= tol for n in candidates)
+
+
 def currency_before(paragraph: str, value: float) -> str | None:
     """找出緊接在這個數字前面的幣別標記（正規化成 USD 或 TWD）；找不到回 None。"""
     for s in num_variants(value):
@@ -376,6 +399,21 @@ def check_draft(draft: dict, snapshot: dict, cutoff_at: str, snapshot_id: str, r
                         where = "、".join(srcs)
                         issues.append(_iss(cid, "critical", f"{metric}={val} 在引用的 {where} 裡找不到，來源不支持這個數字",
                                            f"get_financial_snapshot 或 read_evidence 重新取得 {cid} 的 {metric}，數值照來源填寫", "not_supported"))
+            # --- 本益比沒附計算輸入時，數值也要查得到（組長 11/14，決策 38）---
+            # 上面把 pe_ttm 當成「另有重算規則」而跳過，但重算規則只在草稿附 inputs 時執行，prompt 沒有要求附。
+            # 沒附 inputs 時，數值必須出現在這個 job 的某個工具結果裡（通常是 calculate_metrics 的結果），
+            # 允許依主張自己的位數四捨五入。引用公告原文的由下面的 not_supported 檢查。
+            if (metric == "pe_ttm" and not f.get("inputs") and ev is None and observations is not None
+                    and isinstance(val, (int, float)) and not isinstance(val, bool)):
+                pool = list(snapshot.get("tool_numbers") or [])
+                for o in observations:
+                    if o.get("status") == "ok":
+                        pool += (numeric_leaves(o["data"]) if o.get("data") is not None
+                                 else numbers_in(str(o.get("brief") or o.get("digest") or "")))
+                if not rounds_to(val, pool):
+                    issues.append(_iss(cid, "critical", f"pe_ttm={val} 沒有出現在本 job 的任何工具結果裡，草稿也沒有附計算輸入",
+                                       f"calculate_metrics(operation=pe_ttm) 以同日股價與 TTM EPS 計算後，照結果填寫 {cid} 並引用該工具結果編號；"
+                                       f"算不出來就把 {cid} 改為 unknown", "pe_not_in_tool_results"))
             # --- 來源是否支持數字 ---
             if ev is not None and val is not None:
                 if not paragraph_contains(ev["paragraph"], val):

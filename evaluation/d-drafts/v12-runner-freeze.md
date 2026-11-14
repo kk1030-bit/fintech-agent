@@ -69,10 +69,11 @@ v12-runner-freeze.md（D，W09-D）
 1. 鎖定：第二段截至 11/14 尚未鎖定，預定 11/15 由組長鎖定（上文寫 11/13）。第一段另有修訂 2（11/13，data/manual/balance_overrides.csv 的 2454 負債覆寫，決策第 32 節），cases_digest 不變。
 2. 第二段第 2 點的輸入：自決策第 31 節（11/13）起，研究焦點送的是案例的 task（題目，一字不改），不是案例標題或變體名稱；variant、category、expected_behavior、expected_*、allow_insufficient、perturbation_location 都不進 Agent 輸入。快照若有 task_input、draft_under_review，以同名欄位原樣放進輸入，single、dual（Researcher 與 Reviewer）、workflow 都有；required_elements 只給評分者，盲評匯出會附上。三個模式的輸入仍然相同。
 3. 條件標示：校準 v1、v2 與煙霧測試（到 11/12 為止）是「送變體名稱」的條件；11/14 開發集預演與正式實驗是「送 task」的條件。每個 run 以 focus_source 標示，兩種條件的結果不放同一張表。
-4. 11/14 的覆核程式修正（prompt 版本不變，researcher-v1.2.5、reviewer-v1.2.2）：決策第 35 節（TTM EPS 的期間只寫結尾季，且數值與工具回傳的 TTM EPS 相同時視為那四季）；決策第 37 節（覆核用的財報資料改為該 job 的工具實際回傳的內容：工具對 Agent 回 no_data 時，它的數字與 TTM 季度不算工具回傳過；財報來自共用資料庫的案例也讀得到 TTM 季度）。11/14 以前的 dual 結果是修正前規則，正式實驗用修正後規則。完整清單見 handoff/agent-version-changes.md 第 18 到 23 項。
+4. 11/14 的覆核程式修正（prompt 版本不變，researcher-v1.2.5、reviewer-v1.2.2）：決策第 35 節（TTM EPS 的期間只寫結尾季，且數值與工具回傳的 TTM EPS 相同時視為那四季）；決策第 37 節（覆核用的財報資料改為該 job 的工具實際回傳的內容：工具對 Agent 回 no_data 時，它的數字與 TTM 季度不算工具回傳過；財報來自共用資料庫的案例也讀得到 TTM 季度）。決策第 38 節（本益比沒有附計算輸入時，數值必須出現在該 job 的某個工具結果裡，允許依主張位數四捨五入）。11/14 以前的 dual 結果是修正前規則，正式實驗用修正後規則。完整清單見 handoff/agent-version-changes.md 第 18 到 24 項。
 5. 第四段第 2 點的前瞻第 3 批：已於 11/13 21:16 凍結並以 Agent v2 執行，fwd3-2330 insufficient_evidence、fwd3-2317 succeeded、fwd3-2454 succeeded，三份都未發布（決策第 32 節）。
-6. 執行計畫：evaluation/run-plan.json 由組長端產生；D 11/09 回覆「可以照用」（未逐案檢查，見上文未完成事項第 5 點）；組長 11/14 確認採用，檔內狀態欄已更新。排程維持 11/16 到 11/25，不延長。
-7. 正式實驗前的全面檢查（案例、runner、排程）與結果：決策第 36、37 節。
+6. 鎖定清單：第二段鎖定清單補列 scripts/dev_traces.py、scripts/formal_runs.py（送什麼題目給 Agent 由這兩支決定），鎖定後共 12 個程式檔與 2 個 prompt（決策第 38 節）。
+7. 執行計畫：evaluation/run-plan.json 由組長端產生；D 11/09 回覆「可以照用」（未逐案檢查，見上文未完成事項第 5 點）；組長 11/14 確認採用，檔內狀態欄已更新。排程維持 11/16 到 11/25，不延長。
+8. 正式實驗前的全面檢查（案例、runner、排程）與結果：決策第 36、37、38 節。
 
 簽核：B 交叉評分 [待填]；組長核准 [待填]
 D 實際工時：2小時（runner-smoke.md 與 v12-runner-freeze.md 兩份合計，我自己記錄）。
