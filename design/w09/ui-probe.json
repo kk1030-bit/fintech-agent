@@ -1,0 +1,188 @@
+{
+ "base": "http://127.0.0.1:5109",
+ "checks": [
+  {
+   "check": "1440: no horizontal overflow on load",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "1440: reload keeps ?job= and shows the same job",
+   "pass": true,
+   "seen": "執行中\n階段：工具\nMOCK\n標的\n2454・dual\n資料截止\n2026/09/30 17:30\n快照\nfin-snap:v1.7-price-history"
+  },
+  {
+   "check": "1440: job finishes after reload (no restart from zero)",
+   "pass": true,
+   "seen": "研究完成・待人工核准\n階段：結束\nMOCK\n\n研究流程完成，但尚未經人工核准，所以不會出現在已發布清單。\n\n標的\n245"
+  },
+  {
+   "check": "1440: connection drop keeps last state and says it will retry",
+   "pass": true,
+   "seen": "連線中斷（網路連線失敗），8 秒後重試，第 2 次。畫面保留最後一次讀到的狀態；job 仍在伺服器，重新整理也不會遺失。\n執行中\n階段：研究\nMOCK\n標的\n2"
+  },
+  {
+   "check": "1440: polling recovers after the drop",
+   "pass": true,
+   "seen": "研究完成・待人工核准\n階段：結束\nMOCK\n\n研究流程完成，但尚未經人工核准，所以不會出現在已發布清單。\n\n標的\n245"
+  },
+  {
+   "check": "1440: unknown job shows a message",
+   "pass": true,
+   "seen": "找不到這個 job，可能不是 MOCK job 或已被清除。"
+  },
+  {
+   "check": "1440: paused_quota readable (state, reason, counters)",
+   "pass": true,
+   "seen": "暫停：配額\n階段：工具\nMOCK\n\n已暫停：額度用盡時保存檢查點。恢復後沿用累計請求數，不會歸零；不會自動狂重試。\n\n標的\n2454・dual\n資料截止\n2026/09/30 17:30\n快照\nfin-snap:v1.7-price-his"
+  },
+  {
+   "check": "1440: no overflow with a report open",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "1440: PDF buttons visible, not covered",
+   "pass": true,
+   "seen": [
+    [
+     "預覽 PDF",
+     34,
+     true
+    ],
+    [
+     "下載 PDF",
+     34,
+     true
+    ],
+    [
+     "下載",
+     34,
+     true
+    ]
+   ]
+  },
+  {
+   "check": "1440: source drawer opens within the screen",
+   "pass": true,
+   "seen": {
+    "x": 1000,
+    "y": 0,
+    "width": 440,
+    "height": 900
+   }
+  },
+  {
+   "check": "1440: no page errors",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "390: no horizontal overflow on load",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "390: reload keeps ?job= and shows the same job",
+   "pass": true,
+   "seen": "執行中\n階段：工具\nMOCK\n標的\n2454・dual\n資料截止\n2026/09/30 17:30\n快照\nfin-snap:v1.7-price-history"
+  },
+  {
+   "check": "390: job finishes after reload (no restart from zero)",
+   "pass": true,
+   "seen": "研究完成・待人工核准\n階段：結束\nMOCK\n\n研究流程完成，但尚未經人工核准，所以不會出現在已發布清單。\n\n標的\n245"
+  },
+  {
+   "check": "390: connection drop keeps last state and says it will retry",
+   "pass": true,
+   "seen": "連線中斷（網路連線失敗），8 秒後重試，第 2 次。畫面保留最後一次讀到的狀態；job 仍在伺服器，重新整理也不會遺失。\n執行中\n階段：研究\nMOCK\n標的\n2"
+  },
+  {
+   "check": "390: polling recovers after the drop",
+   "pass": true,
+   "seen": "研究完成・待人工核准\n階段：結束\nMOCK\n\n研究流程完成，但尚未經人工核准，所以不會出現在已發布清單。\n\n標的\n245"
+  },
+  {
+   "check": "390: unknown job shows a message",
+   "pass": true,
+   "seen": "找不到這個 job，可能不是 MOCK job 或已被清除。"
+  },
+  {
+   "check": "390: paused_quota readable (state, reason, counters)",
+   "pass": true,
+   "seen": "暫停：配額\n階段：工具\nMOCK\n\n已暫停：額度用盡時保存檢查點。恢復後沿用累計請求數，不會歸零；不會自動狂重試。\n\n標的\n2454・dual\n資料截止\n2026/09/30 17:30\n快照\nfin-snap:v1.7-price-his"
+  },
+  {
+   "check": "390: no overflow with a report open",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "390: PDF buttons visible, not covered, ≥40 px tall",
+   "pass": true,
+   "seen": [
+    [
+     "預覽 PDF",
+     40,
+     true
+    ],
+    [
+     "下載 PDF",
+     40,
+     true
+    ],
+    [
+     "下載",
+     40,
+     true
+    ]
+   ]
+  },
+  {
+   "check": "390: source drawer opens within the screen",
+   "pass": true,
+   "seen": {
+    "x": 0,
+    "y": 397.171875,
+    "width": 390,
+    "height": 446.828125
+   }
+  },
+  {
+   "check": "390: no page errors",
+   "pass": true,
+   "seen": []
+  },
+  {
+   "check": "PDF preview inline, application/pdf, %PDF",
+   "pass": true,
+   "seen": {
+    "status": 200,
+    "type": "application/pdf",
+    "disp": "inline; filename=\"2454-v1-rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83.pdf\"",
+    "etag": "\"7b654bb1cad33be62bf791146c3c340a809032f22707958541449f92e9784bcf\"",
+    "magic": "%PDF-",
+    "bytes": 407107
+   }
+  },
+  {
+   "check": "PDF download attachment, same bytes",
+   "pass": true,
+   "seen": {
+    "status": 200,
+    "type": "application/pdf",
+    "disp": "attachment; filename=\"2454-v1-rv-a520d5cc-7b34-4f0d-b5ee-008fbddd6f83.pdf\"",
+    "etag": "\"7b654bb1cad33be62bf791146c3c340a809032f22707958541449f92e9784bcf\"",
+    "magic": "%PDF-",
+    "bytes": 407107
+   }
+  },
+  {
+   "check": "PDF ETag → 304",
+   "pass": true,
+   "seen": "\"7b654bb1cad33be62bf791146c3c340a809032f22707958541449f92e9784bcf\""
+  }
+ ],
+ "passed": 25,
+ "total": 25
+}

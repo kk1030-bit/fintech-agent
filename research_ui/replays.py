@@ -18,8 +18,30 @@ from typing import Any
 from .review_view import ISSUE_FIELDS, review_view
 
 ROOT = Path(__file__).resolve().parent.parent
-TRACE_FILES = ("agent/dev-v14-batch1.json", "agent/researcher-v12-traces.json",
-               "agent/researcher-v12-traces-gemini-3.6-flash.json")
+# Which Agent version and which run conditions each recorded file belongs to (handoff/agent-version-changes.md).
+# Shown on every replay so a viewer never reads runs of different versions as one set of results
+# (AGENTS.md: v1 and v2 results are not compared in one table). Newest group first.
+DEV = "開發期（v1 之前）"
+V2 = "Agent v2"
+TRACE_FILES: dict[str, dict[str, str]] = {
+    "agent/calib-v2-dual-postprice-1112.json": {"agent_version": V2, "frozen_cases": True, "condition": "補股價後・題目送 variant・覆核規則修正前（第 28 節）"},
+    "agent/calib-v2-dual-rerun-1112.json": {"agent_version": V2, "frozen_cases": True, "condition": "補股價後・題目送 variant"},
+    "agent/calib-v2-dual-day3.json": {"agent_version": V2, "frozen_cases": True, "condition": "補股價前・題目送 variant"},
+    "agent/calib-v2-dual-day2.json": {"agent_version": V2, "frozen_cases": True, "condition": "補股價前・題目送 variant"},
+    "agent/calib-v2-dual-day1.json": {"agent_version": V2, "frozen_cases": True, "condition": "補股價前・題目送 variant"},
+    "agent/dev-v14-batch1.json": {"agent_version": DEV, "condition": "開發集早期試跑"},
+    "agent/researcher-v12-traces.json": {"agent_version": DEV, "condition": "開發集早期試跑"},
+    "agent/researcher-v12-traces-gemini-3.6-flash.json": {"agent_version": DEV, "condition": "開發集早期試跑（另一模型）"},
+}
+
+# Recorded runs whose result is known to come from a since-fixed program rule. Kept as recorded, with this note.
+RECORD_NOTES = {
+    "calib-v2-dual-postprice-1112:CASE-04": {
+        "label": "覆核程式誤判，規則已修",
+        "note": "這次停在證據不足，是覆核程式把「TTM 要四個連續單季」套到本益比造成的誤判，不是模型錯誤；"
+                "11/13 起規則已修正。紀錄照實保留。依據：handoff/decisions-2026-10.md 第 28 節。",
+    },
+}
 
 # Recorded runs whose case id was later retired. Shown with this note so a viewer does not read them as the
 # sealed holdout case of the same number (lead, handoff/decisions-2026-10.md §15, 11/07; B's source audit).
@@ -32,9 +54,22 @@ SUPERSEDED = {
 }
 
 
+DEV_CASES = "evaluation/dev-cases.json"
+
+
+def _dev_cases() -> dict[str, dict[str, Any]]:
+    """cutoff_at / source_snapshot_id of the frozen development cases (not the sealed holdout)."""
+    try:
+        doc = json.loads((ROOT / DEV_CASES).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {c["case_id"]: c for c in doc.get("cases", []) if c.get("split", "dev") == "dev"}
+
+
 def _load() -> list[dict[str, Any]]:
     runs = []
-    for rel in TRACE_FILES:
+    dev = _dev_cases()
+    for rel, meta in TRACE_FILES.items():
         path = ROOT / rel
         if not path.exists():
             continue
@@ -47,6 +82,13 @@ def _load() -> list[dict[str, Any]]:
             runs.append({
                 "replay_id": replay_id,
                 "superseded": SUPERSEDED.get(replay_id),
+                "record_note": RECORD_NOTES.get(replay_id),
+                "agent_version": meta["agent_version"],
+                # Runs after the 10/25 case freeze used exactly these frozen cases; earlier drafts may differ.
+                "cutoff_at": dev.get(case["case_id"], {}).get("cutoff_at") if meta.get("frozen_cases") else None,
+                "source_snapshot_id": (dev.get(case["case_id"], {}).get("source_snapshot_id")
+                                       if meta.get("frozen_cases") else None),
+                "condition": meta["condition"],
                 "file": rel,
                 "generated_at": doc.get("generated_at"),
                 "commit": doc.get("commit"),
@@ -64,7 +106,8 @@ def _load() -> list[dict[str, Any]]:
 
 def list_replays() -> list[dict[str, Any]]:
     return [{k: r[k] for k in ("replay_id", "file", "generated_at", "commit", "model_id", "case_id", "ticker",
-                               "category", "title", "superseded")}
+                               "category", "title", "superseded", "record_note", "agent_version", "condition", "prompt_versions",
+                               "cutoff_at")}
             | {"status": r["run"].get("status"), "stop_reason": r["run"].get("stop_reason"),
                "review_rounds": sum(1 for s in r["run"].get("steps", []) if s.get("event") == "review")}
             for r in _load()]
@@ -122,10 +165,13 @@ def get_replay(replay_id: str) -> dict[str, Any] | None:
     return {
         "replay_id": found["replay_id"],
         "label": "REPLAY",
-        "source": {k: found[k] for k in ("file", "generated_at", "commit", "model_id", "prompt_versions")},
-        "case": {k: found[k] for k in ("case_id", "ticker", "category", "title", "expected_behavior", "superseded")},
+        "source": {k: found[k] for k in ("file", "generated_at", "commit", "model_id", "prompt_versions",
+                                         "agent_version", "condition")},
+        "case": {k: found[k] for k in ("case_id", "ticker", "category", "title", "expected_behavior", "superseded",
+                                       "record_note")},
         "job": {"status": run.get("status"), "stage": "finished", "stop_reason": run.get("stop_reason"),
                 "ticker": found["ticker"], "mode": "dual", "model_id": found["model_id"],
+                "cutoff_at": found["cutoff_at"], "source_snapshot_id": found["source_snapshot_id"],
                 "prompt_version": (found.get("prompt_versions") or {}).get("researcher"),
                 "calls_used": budget.get("calls_used"), "tool_calls_used": budget.get("tool_calls_used"),
                 "supplement_rounds": budget.get("supplement_rounds"), "active_seconds": budget.get("active_seconds"),

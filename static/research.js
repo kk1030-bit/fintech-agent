@@ -334,7 +334,7 @@
     const recovered = (events || []).some(e => e.event_type === "lease_recovered");
     $("#jobPanel").innerHTML = `
       ${connNote ? `<div class="conn" role="status">${connNote}</div>` : ""}
-      <div class="actions">${badge(text, cls)}${badge(`階段：${STAGE_TEXT[job.stage] || job.stage}`, "b-neutral")}${job.mock ? badge("MOCK", "b-fixture") : ""}${job.replay ? badge("REPLAY", "b-fixture") : ""}</div>
+      <div class="actions">${badge(text, cls)}${badge(`階段：${STAGE_TEXT[job.stage] || job.stage}`, "b-neutral")}${job.mock ? badge("MOCK", "b-fixture") : ""}${job.replay ? badge("REPLAY", "b-fixture") : ""}${job.replay && job.replay.agent_version ? badge(job.replay.agent_version, "b-neutral") : ""}</div>
       ${note}
       ${recovered ? `<p class="hint">worker 中途中斷，已由檢查點接手繼續；已用的請求與工具次數延續，沒有歸零。</p>` : ""}
       <dl class="kv">
@@ -344,7 +344,7 @@
         <dt>模型</dt><dd>${esc(job.model_id || "未設定（MOCK 不呼叫模型）")}・prompt ${esc(job.prompt_version)}</dd>
         <dt>停止原因</dt><dd>${esc(job.stop_reason || "—")}</dd>
         <dt>job_id</dt><dd class="mono">${esc(job.job_id)}</dd>
-        ${job.replay ? `<dt>紀錄來源</dt><dd class="mono">${esc(job.replay.file)}・commit ${esc(job.replay.commit)}・${fmtTime(job.replay.generated_at)}</dd><dt>案例</dt><dd>${job.replay.superseded ? `${badge(job.replay.superseded.label, "b-bad")} ` : ""}${esc(job.replay.case_id)}・${esc(job.replay.category)}・${esc(job.replay.title)}</dd>` : ""}
+        ${job.replay ? `<dt>紀錄來源</dt><dd class="mono">${esc(job.replay.file)}・commit ${esc(job.replay.commit)}・${fmtTime(job.replay.generated_at)}</dd><dt>案例</dt><dd>${job.replay.superseded ? `${badge(job.replay.superseded.label, "b-bad")} ` : ""}${job.replay.record_note ? `${badge(job.replay.record_note.label, "b-warn")} ` : ""}${esc(job.replay.case_id)}・${esc(job.replay.category)}・${esc(job.replay.title)}</dd>` : ""}
       </dl>
       <div class="meters">
         ${meter("模型請求", job.calls_used, 8)}
@@ -511,8 +511,20 @@
     const sel = $("#replaySelect");
     try {
       const body = await getJson("/api/ui/replays");
-      sel.innerHTML = `<option value="">選擇一次真實執行紀錄…</option>` + body.replays.map(r =>
-        `<option value="${esc(r.replay_id)}">${r.superseded ? `【${esc(r.superseded.label)}】` : ""}${esc(r.case_id)}・${esc(r.ticker)}・${esc(r.category)}・${esc(r.stop_reason)}${r.review_rounds ? `・覆核 ${r.review_rounds} 輪` : ""}（${esc((r.generated_at || "").slice(0, 10))}）</option>`).join("");
+      // One <optgroup> per Agent version: runs of different versions are never listed as one set.
+      const groups = [];
+      body.replays.forEach(r => {
+        const key = r.agent_version || "未標版本";
+        let g = groups.find(x => x.key === key);
+        if (!g) { g = { key, rows: [] }; groups.push(g); }
+        g.rows.push(r);
+      });
+      const opt = r => {
+        const flag = r.superseded || r.record_note;
+        return `<option value="${esc(r.replay_id)}">${flag ? `【${esc(flag.label)}】` : ""}${esc(r.case_id)}・${esc(r.ticker)}・${esc(r.category)}・${esc(r.stop_reason)}${r.review_rounds ? `・覆核 ${r.review_rounds} 輪` : ""}（${esc((r.generated_at || "").slice(0, 10))}・${esc((r.prompt_versions || {}).researcher || "")}）</option>`;
+      };
+      sel.innerHTML = `<option value="">選擇一次真實執行紀錄…</option>` + groups.map(g =>
+        `<optgroup label="${esc(g.key)}">${g.rows.map(opt).join("")}</optgroup>`).join("");
     } catch (err) {
       sel.innerHTML = `<option value="">紀錄讀取失敗：${esc(err.message)}</option>`;
     }
@@ -531,9 +543,12 @@
     try {
       const r = await getJson(`/api/ui/replays/${encodeURIComponent(id)}`);
       if (id !== currentReplayId) return;
-      const job = { ...r.job, cutoff_at: null, source_snapshot_id: r.case.case_id, replay: { ...r.source, ...r.case } };
+      const job = { ...r.job, source_snapshot_id: r.job.source_snapshot_id || `${r.case.case_id}（紀錄未存快照編號）`,
+                    replay: { ...r.source, ...r.case } };
       renderJob(job, r.events);
-      $("#jobPanel").insertAdjacentHTML("afterbegin", `<div class="conn replay">REPLAY：${esc(fmtTime(r.source.generated_at))} 的真實執行紀錄（Gemini ${esc(r.source.model_id)} 自己選每一步），不是現場運算。${esc(r.limits_of_record)}</div>${r.case.superseded ? `<div class="conn warn-line"><b>${esc(r.case.superseded.label)}：</b>${esc(r.case.superseded.note)}</div>` : ""}`);
+      const pv = r.source.prompt_versions || {};
+      const notice = r.case.superseded || r.case.record_note;
+      $("#jobPanel").insertAdjacentHTML("afterbegin", `<div class="conn replay">REPLAY：${esc(fmtTime(r.source.generated_at))} 的真實執行紀錄（Gemini ${esc(r.source.model_id)} 自己選每一步），不是現場運算。<b>${esc(r.source.agent_version || "未標版本")}</b>・${esc(pv.researcher || "")}／${esc(pv.reviewer || "")}・${esc(r.source.condition || "")}。${esc(r.limits_of_record)}</div>${notice ? `<div class="conn warn-line"><b>${esc(notice.label)}：</b>${esc(notice.note)}</div>` : ""}`);
       renderTrace(r.events);
       renderReview(r.review_view, { replay: true });
       setStatus(`回放 ${r.case.case_id}`);

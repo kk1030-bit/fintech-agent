@@ -23,7 +23,7 @@
 
 | 檔案 | 狀態 |
 |---|---|
-| `02-render-published-list-live-1440.jpg`、`02-render-published-list-full-1440.jpg` | 11/08 擷取，卡片是 LIVE **第 1 版**。A 已改成清單只列每份研究的最新版（PR `codex/A-latest-version-list`），上線後補拍。在那之前若要用，請寫「11/08 畫面，之後已發布第 2 版」 |
+| `02-render-published-list-live-1440.jpg`、`02-render-published-list-full-1440.jpg` | 11/08 擷取，卡片是 LIVE **第 1 版**。A 已改成清單只列每份研究的最新版（PR `codex/A-latest-version-list`），上線後補拍。**11/14 已補拍**：`media/w09/w09-r01-render-s07-dashboard-1440.jpg`（清單只列第 2 版）、`w09-r00-render-overview-full-1440.jpg`；清單見 `media/v12-screenshots-manifest.csv`。這兩張 02 不要再用 |
 
 11/08 的 LIVE 第 1 版截圖（主張顯示「無來源」、收盤價停在 9/30）已刪除，不要再用。原因與修正見 `ui/v12-risk-state-cases.md` 第 5 節與 `tests/test_forward_report.py`。第 1 版照規則留在網站的歷史版本裡，網頁會標「舊版」並連到第 2 版。
 
