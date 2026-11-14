@@ -290,5 +290,5 @@
 - 查手冊任務表（Notion，W07-E 至 W13-E）：驗收清單每週都要求「來源與版本完整」「待填不冒充完成」「未完成聲明不刪」「明確標回放片段」，沒有任何一條要求評審看得懂；「備用 19」「備用 18」也是手冊指定的頁名。E 是照驗收清單做的，問題主要在任務寫法。第一次從「講給人聽」檢查排在 W12（12/04）。
 - **組長決定**：在 `AGENTS.md` 加第五節。重點：正文頁每頁一句重點；來源、版本、內部用語放備註欄與附錄頁；限制聲明全份只在實驗設計頁講一次（附錄再列）；MOCK／REPLAY 截圖只留短標籤；沒有的結果寫「待正式實驗」；頁碼連續、備用頁放最後。手冊驗收清單的相關條目以這個做法視為符合。
 - 第二節四件事（數字來源、v1／v2 分開、不寫保留集內容、不寫正確率）不變。
-- 尚未完成：W08-E、W09-E 的指定交付物（`slides/deck-v7.pptx`、`artifact-index-w08.md`、`slides/v12-graph-and-limits.pptx`、`slides/deck-v8.pptx` 等）main 上還沒有；補交日期由組長與 E 約定。
+- W08-E 交付狀況：PR #42（11/13 合併）已把 `artifact-index-w08.md` 與 `deck-W08-E-integrated-v1.pdf`（放在 repo 根目錄）交上 main。指定檔名的 `slides/deck-v7.pptx`、`slides/v12-graph-and-limits.pptx` 以及 W09-E 的 `slides/deck-v8.pptx` 等 main 上還沒有；簡報依第五節重做後再交，日期由組長與 E 約定。
 - **另一件待組長決定（E 11/13 提出）**：研究問題有兩套，編號相同、內容不同。`docs/v12-motivation.md`（第一章）的 RQ1–RQ3 是資料一致性、可追溯研究、成果可用性；`docs/v12-evaluation-method.md` 與 D 的 `evaluation/d-drafts/protocol-v1.md` 的 RQ1–RQ3 是選工具是否提高證據支持率、Reviewer 是否更能發現並修正錯誤、品質改善是否值得成本。正式實驗與評分指標對應的是後者。組長端建議以後者為正式 RQ，前者在第一章改稱「系統設計目標」；組長已在群組請 C 說明，定案前 E 的研究問題頁先不動。
