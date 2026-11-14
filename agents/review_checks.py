@@ -204,6 +204,16 @@ def ttm_quarters(fact: dict) -> list[str]:
     return [f"{i // 4}Q{i % 4 + 1}" for i in range(start, end + 1)]
 
 
+def ttm_source(snapshot: dict) -> dict:
+    """TTM 季度與 TTM EPS 的依據（決策 37）：這個 job 的財報工具實際回傳的內容（覆核視圖的 tool_ttm，
+    資料來自案例快照或共用資料庫都一樣）。工具對 Agent 回 no_data 或逾時時 tool_ttm 是空的，
+    不退回去看案例自帶的財報快照，避免用 Agent 沒拿到的資料放行。
+    沒有 tool_ttm 這個欄位（不是經由 SnapshotToolbox 產生的視圖）才看 financial_snapshot。"""
+    if "tool_ttm" in snapshot:
+        return snapshot["tool_ttm"] or {}
+    return snapshot.get("financial_snapshot") or {}
+
+
 def snapshot_ttm_periods(fin: dict) -> list[str]:
     return list(fin.get("ttm_periods") or [q.get("period") for q in fin.get("ttm_quarters") or []])
 
@@ -401,9 +411,13 @@ def check_draft(draft: dict, snapshot: dict, cutoff_at: str, snapshot_id: str, r
                                        f"get_financial_snapshot(ticker, cutoff) 取得前一季單季值與 available_at，補上前期來源", "prior_no_source", "pass"))
             # --- TTM 要四個連續單季 ---
             # P/E 的期間是股價日期，季度來自它用的 TTM EPS（組長 11/12，決策 28）：本身沒寫季度時，改查草稿的 eps_ttm 或快照的 TTM 季度。
-            quarters = as_of_ttm_quarters(f, snap)  # 只寫結尾季且數值等於快照 TTM EPS 時，視為快照的四季（決策 35）
-            if not quarters and metric.startswith("pe"):
-                quarters = eps_ttm_quarters(claims, snap)
+            ttm_fin = ttm_source(snapshot)
+            quarters = as_of_ttm_quarters(f, ttm_fin)  # 只寫結尾季且數值等於工具回傳的 TTM EPS 時，視為那四季（決策 35、37）
+            if metric.startswith("pe"):
+                # P/E 自己的期間標的是股價日期或 TTM 的結尾季；四個季度看它用的 TTM EPS（決策 28、37）。
+                eps_quarters = eps_ttm_quarters(claims, ttm_fin)
+                if not quarters or (len(quarters) == 1 and consecutive_quarters(eps_quarters) and eps_quarters[-1] == quarters[0]):
+                    quarters = eps_quarters
             if f.get("period_basis") == "ttm" and not consecutive_quarters(quarters):
                 issues.append(_iss(cid, "critical", f"TTM 需要四個連續單季，收到 {quarters or f.get('period')}",
                                    f"get_financial_snapshot(ticker, cutoff) 確認連續四個單季都已公告；不足則 {metric} 標 null", "ttm_not_consecutive"))

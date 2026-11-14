@@ -73,6 +73,43 @@ def test_ending_quarter_blocked_when_snapshot_quarters_are_not_consecutive_or_mi
     assert ttm_flags(pe_draft(eps_period="2026Q2"), snap()) == ["c1", "c2"]
 
 
+# ----- 11/14（決策 37）：TTM 的依據是這個 job 的財報工具實際回傳的內容（覆核視圖的 tool_ttm） -----
+def tool_view(periods=Q4, eps_ttm=86.28, **extra):
+    """覆核視圖：財報來自共用資料庫的案例沒有 financial_snapshot，只有工具回傳的 tool_ttm。"""
+    ttm = {"ttm_periods": periods, "eps_ttm": eps_ttm} if periods is not None else {}
+    return {"ticker": "2330", "evidences": [], "tool_numbers": [86.28, 28.74, 27.25], "tool_ttm": ttm, **extra}
+
+
+def test_pe_dated_by_price_passes_on_tool_quarters_without_a_case_financial_snapshot():
+    assert ttm_flags(pe_draft(with_eps=False), tool_view()) == []
+
+
+def test_eps_ttm_ending_quarter_passes_on_tool_quarters():
+    assert ttm_flags(pe_draft(eps_period="2026Q2"), tool_view()) == []
+
+
+def test_pe_written_with_the_ending_quarter_follows_its_eps_ttm_quarters():
+    assert ttm_flags(pe_draft(with_eps=False, pe_period="2026Q2"), tool_view()) == []
+    assert ttm_flags(pe_draft(pe_period="2026Q2"), tool_view()) == []                      # eps_ttm 寫四季、P/E 寫結尾季
+    assert ttm_flags(pe_draft(with_eps=False, pe_period="2026Q1"), tool_view()) == ["c2"]   # 不是最後一季
+    assert ttm_flags(pe_draft(with_eps=False, pe_period="2026Q2"),
+                     tool_view(periods=["2025Q2", "2025Q4", "2026Q1", "2026Q2"])) == ["c2"]   # 工具的四季不連續
+
+
+def test_single_quarter_eps_as_ttm_still_blocked_on_tool_quarters():
+    d = pe_draft(eps_period="2026Q2")
+    d["claims"][0]["facts"][0]["value"] = 27.25
+    assert ttm_flags(d, tool_view()) == ["c1", "c2"]
+
+
+def test_no_fallback_to_the_case_snapshot_when_the_tool_gave_the_agent_nothing():
+    """財報工具對 Agent 回 no_data（tool_ttm 是空的）：就算案例自帶的財報快照有四季，也不能拿來放行。"""
+    view = tool_view(periods=None, financial_snapshot={"eps_ttm": 86.28, "ttm_periods": Q4})
+    assert ttm_flags(pe_draft(with_eps=False), view) == ["c2"]
+    assert ttm_flags(pe_draft(eps_period="2026Q2"), view) == ["c1", "c2"]
+    assert ttm_flags(pe_draft(), view) == []  # 草稿自己寫出連續四季的照舊（數字是否出現在工具結果由另一條規則檢查）
+
+
 def obs(*tools):
     return [{"obs_id": f"obs-{i}", "tool_name": t, "status": "ok", "brief": "", "digest": ""} for i, t in enumerate(tools, 1)]
 

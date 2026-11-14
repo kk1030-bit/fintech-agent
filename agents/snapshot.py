@@ -93,16 +93,29 @@ class SnapshotToolbox:
         view = dict(self.case or {"ticker": self.ticker})
         view["evidences"] = [dict(e, paragraph=e.get("paragraph") or "") for e in self._evidences()]
         # Numbers the financial/price tools return for this job (10/29): a fact citing the snapshot_id must match one.
+        # The calls go through the same path as the Agent's own tool calls, so a snapshot's tool_simulation applies
+        # here too: a tool that answers the Agent with no_data or a timeout adds no numbers and no TTM quarters
+        # (11/14, decision 37). tool_ttm is what the financial tool returned about TTM for this job, whether the
+        # data came from the case snapshot or from the shared store; the TTM review rules read it.
         nums: list[float] = []
-        for call in (lambda: self.get_financial_snapshot(self.ticker, self.cutoff.isoformat()),
-                     lambda: self.get_price_window(self.ticker, self.cutoff.isoformat(), 1)):
+        ttm: dict[str, Any] = {}
+        cut = self.cutoff.isoformat()
+        for name, args in (("get_financial_snapshot", {"ticker": self.ticker, "cutoff": cut}),
+                           ("get_price_window", {"ticker": self.ticker, "end_at": cut, "sessions": 1})):
             try:
-                result = call()
+                result = self(name, args)
             except Exception:  # noqa: BLE001 - a tool failure just means no numbers from it
                 continue
-            if result.get("status") == "ok":
-                nums.extend(_numbers(result.get("data")))
+            if result.get("status") != "ok":
+                continue
+            data = result.get("data")
+            nums.extend(_numbers(data))
+            if name == "get_financial_snapshot" and isinstance(data, dict):
+                periods = data.get("ttm_periods") or [q.get("period") for q in data.get("ttm_quarters") or []]
+                eps_ttm = data["eps_ttm"] if "eps_ttm" in data else (data.get("metrics") or {}).get("eps_ttm")
+                ttm = {"ttm_periods": [q for q in periods if q], "eps_ttm": eps_ttm}
         view["tool_numbers"] = nums
+        view["tool_ttm"] = ttm
         return view
 
     def search_evidence(self, ticker: str, query: str, cutoff: str, limit: int = 5) -> dict[str, Any]:

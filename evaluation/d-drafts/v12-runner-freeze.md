@@ -16,7 +16,7 @@ v12-runner-freeze.md（D，W09-D）
 
 二、60 run 三模式的輸入與工具
 1. 計畫：保留集 20 案 × 3 模式（single、dual、workflow）= 60 run，固定種子 20261116；同一個案例的三個模式連續執行，起始模式輪替；每配額日 6 run（2 案 × 3 模式），共 10 個配額日。run_id 格式為 formal-v2-案例ID-模式。（來源：scripts/formal_runs.py；我沒有打開 evaluation/run-plan.json）
-2. 輸入相同：三個模式建 job 時都用同一組 ticker、cutoff_at、source_snapshot_id、focus（案例標題）；案例只載入一次，三個模式共用。模型 ID 會與 handoff/quota-baseline.json 比對，不一致就停止。三個模式共用同一套預算閘門與上限。
+2. 輸入相同：三個模式建 job 時都用同一組 ticker、cutoff_at、source_snapshot_id、focus（案例標題）【組長端 11/14 更新：自決策第 31 節起改送案例的 task，見第七節第 2 點】；案例只載入一次，三個模式共用。模型 ID 會與 handoff/quota-baseline.json 比對，不一致就停止。三個模式共用同一套預算閘門與上限。
 3. 工具與流程的差異（這是設計差異，不是輸入差異）：
 - single：Researcher 自己選工具，最多 8 次發送，沒有 Reviewer，寫完草稿就結束。
 - dual：Researcher 初次研究最多 4 次發送，其餘留給 Reviewer；Reviewer 加上規則檢查。
@@ -64,6 +64,15 @@ v12-runner-freeze.md（D，W09-D）
 3. 盲評檔欄位需求：「停止原因與執行紀錄是否一致」這欄在盲評時做不了，決策第 29 節：組長端建議改成公開對照表（--reveal）之後由程式逐份比對，B 和我抽查，B 11/12 已同意，待組長確認；我 11/16 前回覆組長。
 4. 保留集接觸紀錄第 1 點：B 已核對（結論見第五段第 1 點），不用再補。
 5. run-plan.json 我沒有打開，只依組長說明和 formal_runs.py 確認排程設計；「可以照用」是我 11/09 的回覆，沒有自己逐案檢查。
+
+七、組長端更新（2026-11-14；組長決定不另請 D 更新，由組長端補記。與上文不一致之處以本節為準，上文 D 的原文不改）
+1. 鎖定：第二段截至 11/14 尚未鎖定，預定 11/15 由組長鎖定（上文寫 11/13）。第一段另有修訂 2（11/13，data/manual/balance_overrides.csv 的 2454 負債覆寫，決策第 32 節），cases_digest 不變。
+2. 第二段第 2 點的輸入：自決策第 31 節（11/13）起，研究焦點送的是案例的 task（題目，一字不改），不是案例標題或變體名稱；variant、category、expected_behavior、expected_*、allow_insufficient、perturbation_location 都不進 Agent 輸入。快照若有 task_input、draft_under_review，以同名欄位原樣放進輸入，single、dual（Researcher 與 Reviewer）、workflow 都有；required_elements 只給評分者，盲評匯出會附上。三個模式的輸入仍然相同。
+3. 條件標示：校準 v1、v2 與煙霧測試（到 11/12 為止）是「送變體名稱」的條件；11/14 開發集預演與正式實驗是「送 task」的條件。每個 run 以 focus_source 標示，兩種條件的結果不放同一張表。
+4. 11/14 的覆核程式修正（prompt 版本不變，researcher-v1.2.5、reviewer-v1.2.2）：決策第 35 節（TTM EPS 的期間只寫結尾季，且數值與工具回傳的 TTM EPS 相同時視為那四季）；決策第 37 節（覆核用的財報資料改為該 job 的工具實際回傳的內容：工具對 Agent 回 no_data 時，它的數字與 TTM 季度不算工具回傳過；財報來自共用資料庫的案例也讀得到 TTM 季度）。11/14 以前的 dual 結果是修正前規則，正式實驗用修正後規則。完整清單見 handoff/agent-version-changes.md 第 18 到 23 項。
+5. 第四段第 2 點的前瞻第 3 批：已於 11/13 21:16 凍結並以 Agent v2 執行，fwd3-2330 insufficient_evidence、fwd3-2317 succeeded、fwd3-2454 succeeded，三份都未發布（決策第 32 節）。
+6. 執行計畫：evaluation/run-plan.json 由組長端產生；D 11/09 回覆「可以照用」（未逐案檢查，見上文未完成事項第 5 點）；組長 11/14 確認採用，檔內狀態欄已更新。排程維持 11/16 到 11/25，不延長。
+7. 正式實驗前的全面檢查（案例、runner、排程）與結果：決策第 36、37 節。
 
 簽核：B 交叉評分 [待填]；組長核准 [待填]
 D 實際工時：2小時（runner-smoke.md 與 v12-runner-freeze.md 兩份合計，我自己記錄）。
