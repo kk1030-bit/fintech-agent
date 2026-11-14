@@ -292,3 +292,16 @@
 - 第二節四件事（數字來源、v1／v2 分開、不寫保留集內容、不寫正確率）不變。
 - W08-E 交付狀況：PR #42（11/13 合併）已把 `artifact-index-w08.md` 與 `deck-W08-E-integrated-v1.pdf`（放在 repo 根目錄）交上 main。指定檔名的 `slides/deck-v7.pptx`、`slides/v12-graph-and-limits.pptx` 以及 W09-E 的 `slides/deck-v8.pptx` 等 main 上還沒有；簡報依第五節重做後再交，日期由組長與 E 約定。
 - **另一件待組長決定（E 11/13 提出）**：研究問題有兩套，編號相同、內容不同。`docs/v12-motivation.md`（第一章）的 RQ1–RQ3 是資料一致性、可追溯研究、成果可用性；`docs/v12-evaluation-method.md` 與 D 的 `evaluation/d-drafts/protocol-v1.md` 的 RQ1–RQ3 是選工具是否提高證據支持率、Reviewer 是否更能發現並修正錯誤、品質改善是否值得成本。正式實驗與評分指標對應的是後者。組長端建議以後者為正式 RQ，前者在第一章改稱「系統設計目標」；組長已在群組請 C 說明，定案前 E 的研究問題頁先不動。
+
+## 34. 2026-11-14 合併 W09-A；E01 示範方式定案（不開放 Render 研究入口）
+
+- **合併 W09-A**（分支 `codex/W09-A`，A）：`design/ui-regression-w09.md`、`demo/sample-w09.mp4`、`demo/sample-w09-render-live.mp4`、`media/v12-screenshots-manifest.csv`、`media/w09/` 16 張圖；回放清單加入 Agent v2 dual 紀錄並依版本分組、標示條件。只改 `research_ui/replays.py`、`static/research.js`，沒有動 Agent 程式、prompt、案例與凍結檔。組長端試合後 pytest 477 通過，`build_freeze.py --verify` 一致。回放只讀 `agent/` 的開發集紀錄，不讀保留集。兩支影片的內容組長端沒有逐格檢視，依 A 的說明登錄。
+- **E01（示範案例有配額時真的執行）組長決定**：
+  1. **不開放 Render 研究入口，不在展示現場執行。** 理由：11/02 已核定研究只在組長 Mac 執行、Render 不設 Gemini 金鑰；11/16–11/25 每日 6 個額度全數用於正式實驗；現場執行結果不可控。
+  2. **示範以標明 REPLAY 的 Agent v2 真實執行紀錄呈現**，講稿寫「回放」，不寫「現場執行」。MOCK 畫面只能說是介面展示。
+  3. E01 的驗收寫法：真實執行在組長 Mac 完成並留有紀錄（`agent/` 的執行紀錄檔），展示時以回放呈現。
+  4. 「至少一次覆核要求補查後修正」：目前 Agent v2 沒有「退回修正後通過」的紀錄（9 筆通過都是第一輪通過）。現有可用的是 CASE-15（Reviewer 要求補查 → Researcher 改稿 → 仍判定證據不足而停止），講稿照實說明。11/14 開發集預演若出現「修正後通過」的紀錄，再改用該筆。
+- **兩支影片可以怎麼說**（依 A 11/14 說明）：
+  - `demo/sample-w09-render-live.mp4`（41 秒）：Render 線上、組長核准發布的 LIVE 報告（2330 報告第 2 版 rv-db6b0e1b，資料截止 11/06 21:00）。**這份報告是 Agent v1 執行的。**
+  - `demo/sample-w09.mp4`（71 秒）：本機 MOCK 介面展示加 Agent v2 真實執行紀錄的回放（CASE-15、CASE-18）；不是 LIVE，不可說成現場執行或線上結果。
+- **用語**：報告版本寫「第 2 版」，Agent 版本寫「Agent v1／v2」，不單寫「v2」，避免把報告第 2 版讀成 Agent v2。目前線上兩份 LIVE 報告（2317、2330）都是 Agent v1；Agent v2 的 LIVE 研究只有前瞻第 3 批（尚未發布）。
