@@ -13,7 +13,7 @@
 | 目標 | 確認 job 恢復、PDF、手機沒有阻擋展示的問題；三條示範路徑能在網站上真實操作；交 E 一段標版本的操作片段與可用截圖 |
 | 既有狀態 | W08 已做 PDF 快取／ETag、慢伺服器提示、重試；11/09 已上線「清單只列最新版」。回放清單只有 v1 之前的開發期紀錄 |
 | 輸入 | `demo/script-v1.md`（E 的三分鐘講稿）、手冊 06 E01、`handoff/agent-version-changes.md`、`agent/` 的真實執行紀錄、Render 上的 LIVE 第 2 版 |
-| 交付 | 本文件、`demo/sample-w09.mp4`、`media/v12-screenshots-manifest.csv`、`media/w09/` 16 張圖、回放清單修正與測試 |
+| 交付 | 本文件、`demo/sample-w09.mp4`（本機）與 `demo/sample-w09-render-live.mp4`（Render LIVE）、`media/v12-screenshots-manifest.csv`、`media/w09/` 16 張圖、回放清單修正與測試 |
 | 驗收人 | 組長 |
 
 ## 二、job 恢復／PDF／手機：檢查結果
@@ -84,7 +84,7 @@ Render 上另外實測（內建瀏覽器，375 寬模擬手機）：2330 第 2 �
 
 | 路徑 | 網站上用什麼 | 標籤 | 驗證結果 |
 |---|---|---|---|
-| ① 正常：已核准報告 → 來源 → PDF | Render 2330 第 2 版 `rv-db6b0e1b…`（資料截止 11/06 21:00），也可用 2317 第 2 版 `rv-2ed6652e…` | **LIVE**（Agent v1，前瞻第 2 批） | ✅ Render 實測：清單、報告、來源抽屜、PDF 預覽／下載，桌面與手機都可操作 |
+| ① 正常：已核准報告 → 來源 → PDF | Render 2330 第 2 版 `rv-db6b0e1b…`（資料截止 11/06 21:00），也可用 2317 第 2 版 `rv-2ed6652e…` | **LIVE**（Agent v1，前瞻第 2 批） | ✅ Render 實測：清單、報告、來源抽屜、PDF 預覽／下載，桌面與手機都可操作；已錄影 `demo/sample-w09-render-live.mp4` |
 | ② 覆核要求補查 | 回放 `calib-v2-dual-day3:CASE-15`（11/08，開發集）。流程：第 1 輪 Reviewer 退回修正（c1、c2 critical）→ Researcher 補查改稿 → 第 2 輪仍資料不足，停止 | **REPLAY**（Agent v2） | ✅ 本機可操作；Render 要等本分支合併部署 |
 | ③ 資料不足 | 回放 `calib-v2-dual-rerun-1112:CASE-18`（11/12，開發集，關鍵證據在 cutoff 之後）。Researcher 自己判定不足而停止，不下結論 | **REPLAY**（Agent v2） | ✅ 本機可操作；Render 同上 |
 
@@ -102,7 +102,23 @@ Render 上另外實測（內建瀏覽器，375 寬模擬手機）：2330 第 2 �
 
 **路徑的選擇**：② 與 ③ 用哪一筆，由 D 核對 trace 後確認（E 講稿也寫待 D 核對）。上表是 A 的建議。
 
-## 五、短操作片段 `demo/sample-w09.mp4`
+## 五、短操作片段
+
+共兩支，分工不同：
+
+| 檔案 | 環境 | 標籤 | 內容 |
+|---|---|---|---|
+| `demo/sample-w09-render-live.mp4` | Render 線上 | **LIVE** | 路徑①：清單 → 2330 第 2 版報告 → 來源抽屜 → PDF，PDF 版本號與網頁一致 |
+| `demo/sample-w09.mp4` | 本機 | MOCK＋REPLAY | 配額與狀態、job 恢復、路徑②③的 Agent v2 回放 |
+
+### Render LIVE 片段 `demo/sample-w09-render-live.mp4`
+
+- 41 秒。A 在 2026-11-14 15:04（台北）用 Windows 錄自己電腦上的 Chrome 視窗，內容沒有剪接。
+- Claude 只做了三件事：上方加兩行標籤列（Render、錄製時間、LIVE、版本、Agent 版本）、120fps 轉 30fps、去掉無聲的音軌。
+- 畫面沒有拍到系統時鐘，錄製時間依原始檔名與檔案建立時間。
+- 原始檔在 A 電腦上，沒有放進 repo。
+
+### 本機片段 `demo/sample-w09.mp4`
 
 - 71 秒，1280×800。用 `scripts/w09_record_sample.py` 以 Playwright 錄本機畫面，ffmpeg 只在上方加一條標籤列。
 - 每一格畫面都標「本機（非 Render）・codex/W09-A 476aa5b・錄製 2026-11-14・MOCK／REPLAY，非 LIVE・無模型呼叫」。第二行寫目前這段在做什麼。
@@ -150,6 +166,7 @@ python scripts/w09_ui_probe.py --base http://127.0.0.1:5109 --out design/w09/ui-
 python scripts/w09_record_sample.py --base http://127.0.0.1:5109 --out tmp/w09-video --marks tmp/w09-video/marks.json
 python -c "import scripts.w09_record_sample as m; m.caption('tmp/w09-video','demo/sample-w09.mp4', '<標籤列文字>')"
 python scripts/w09_local_shots.py --base http://127.0.0.1:5109 --out media/w09
+ffmpeg -i <A 的原始錄影>.mp4 -an -vf "fps=30,pad=1920:1120:0:100,drawtext=…(兩行標籤)" -c:v libx264 -crf 26 demo/sample-w09-render-live.mp4
 ```
 
 Render 截圖：Claude 桌面 App 內建瀏覽器開 Render，html2canvas 1.4.1 擷取（scale 2），存到下載資料夾再放進 repo，沒有修圖。
