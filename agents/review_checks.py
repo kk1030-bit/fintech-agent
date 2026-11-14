@@ -204,13 +204,31 @@ def ttm_quarters(fact: dict) -> list[str]:
     return [f"{i // 4}Q{i % 4 + 1}" for i in range(start, end + 1)]
 
 
+def snapshot_ttm_periods(fin: dict) -> list[str]:
+    return list(fin.get("ttm_periods") or [q.get("period") for q in fin.get("ttm_quarters") or []])
+
+
+def as_of_ttm_quarters(fact: dict, fin: dict) -> list[str]:
+    """eps_ttm 的期間只寫結尾那一季（「截至 2026Q2 的 TTM」）時，回傳快照的四季（決策 35）。
+    只在三件事都成立時才認：快照的 TTM 是連續四季、最後一季就是這一季、數值等於快照的 eps_ttm。
+    單季 EPS 冒充 TTM 時數值對不上，回傳原本的季度，照樣被擋。"""
+    quarters = ttm_quarters(fact)
+    periods = snapshot_ttm_periods(fin)
+    value, snap_value = fact.get("value"), fin.get("eps_ttm")
+    numeric = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in (value, snap_value))
+    if (fact.get("metric") == "eps_ttm" and len(quarters) == 1 and consecutive_quarters(periods)
+            and periods[-1] == quarters[0] and numeric and abs(value - snap_value) <= 0.005):
+        return periods
+    return quarters
+
+
 def eps_ttm_quarters(claims: list[dict], fin: dict) -> list[str]:
     """P/E 所用 TTM EPS 的季度：草稿中 eps_ttm 事實的季度優先，沒有就用快照的 ttm_periods／ttm_quarters（決策 28）。"""
     for c in claims:
         for f in c.get("facts", []):
             if f.get("metric") == "eps_ttm" and ttm_quarters(f):
-                return ttm_quarters(f)
-    return list(fin.get("ttm_periods") or [q.get("period") for q in fin.get("ttm_quarters") or []])
+                return as_of_ttm_quarters(f, fin)
+    return snapshot_ttm_periods(fin)
 
 
 def coverage_notes(draft: dict, observations: list[dict]) -> list[str]:
@@ -383,7 +401,7 @@ def check_draft(draft: dict, snapshot: dict, cutoff_at: str, snapshot_id: str, r
                                        f"get_financial_snapshot(ticker, cutoff) 取得前一季單季值與 available_at，補上前期來源", "prior_no_source", "pass"))
             # --- TTM 要四個連續單季 ---
             # P/E 的期間是股價日期，季度來自它用的 TTM EPS（組長 11/12，決策 28）：本身沒寫季度時，改查草稿的 eps_ttm 或快照的 TTM 季度。
-            quarters = ttm_quarters(f)
+            quarters = as_of_ttm_quarters(f, snap)  # 只寫結尾季且數值等於快照 TTM EPS 時，視為快照的四季（決策 35）
             if not quarters and metric.startswith("pe"):
                 quarters = eps_ttm_quarters(claims, snap)
             if f.get("period_basis") == "ttm" and not consecutive_quarters(quarters):

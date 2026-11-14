@@ -305,3 +305,17 @@
   - `demo/sample-w09-render-live.mp4`（41 秒）：Render 線上、組長核准發布的 LIVE 報告（2330 報告第 2 版 rv-db6b0e1b，資料截止 11/06 21:00）。**這份報告是 Agent v1 執行的。**
   - `demo/sample-w09.mp4`（71 秒）：本機 MOCK 介面展示加 Agent v2 真實執行紀錄的回放（CASE-15、CASE-18）；不是 LIVE，不可說成現場執行或線上結果。
 - **用語**：報告版本寫「第 2 版」，Agent 版本寫「Agent v1／v2」，不單寫「v2」，避免把報告第 2 版讀成 Agent v2。目前線上兩份 LIVE 報告（2317、2330）都是 Agent v1；Agent v2 的 LIVE 研究只有前瞻第 3 批（尚未發布）。
+
+## 35. 2026-11-14 開發集預演（送 task）結果；覆核規則：TTM EPS 期間只寫結尾季
+
+- **預演**（決策 31 的後續；Agent v2，researcher-v1.2.5／reviewer-v1.2.2；題目用 B 的 `evaluation/dev-tasks.json`，6 個 run 的 `focus_source` 都是 `task`）。紀錄：`agent/calib-v2-task-rehearsal-1114-dual.json`、`agent/calib-v2-task-rehearsal-1114-workflow.json`。
+  - dual：CASE-01 review_pass；CASE-04 review_insufficient；CASE-19 review_pass（覆核退回 1 輪後修正通過）；CASE-22 review_pass。
+  - workflow：CASE-01 產出草稿；CASE-19 researcher_insufficient。
+  - 沒有程式錯誤、沒有輸出被截斷。只有 6 筆，不能據此說「改送 task 對結果沒有影響」；與送 `variant` 的舊結果條件不同，不放同一張表。
+  - CASE-19 dual 是 Agent v2 第一筆「覆核要求補查 → 修正 → 通過」的真實紀錄（E01 示範可用，決策 34 第 4 點）。
+- **CASE-04 被規則誤擋**：收盤價 2480、TTM EPS 86.28、P/E 28.74 都與快照一致。模型把 eps_ttm 的期間寫成「2026Q2」（截至該季），四個季度寫在主張文字裡；「TTM 要四個連續單季」規則只讀到一個季度就列 critical，退回後模型沒有改寫法，預算用完而停止。模型覆核兩輪都判 pass。v2 紀錄中其他 TTM 數字都寫成起訖或四季清單，這是第一次出現此寫法。
+- **組長決定修**（`handoff/agent-version-changes.md` 第 20 項）：eps_ttm 的期間只寫一個季度時，若快照的 TTM 是連續四季、最後一季就是該季、且數值等於快照的 eps_ttm（差 ≤ 0.005），視為快照的四季。用到這個 eps_ttm 的 pe_ttm 同樣適用。單季 EPS 冒充 TTM（數值對不上）、結尾季不符、快照四季不連續或沒有 TTM 季度，仍列 critical。
+- 只改覆核程式（`agents/review_checks.py` 的 `as_of_ttm_quarters`），prompt 不變；沒有看保留集；屬通用規則。與決策 28 同類（算對卻被判定方式誤擋）。
+- 離線驗證（不花額度，用今晚的草稿與 job 內存的工具結果）：CASE-04 由證據不足改為通過、無任何問題項；CASE-01、19、22 結果不變。CASE-04 沒有以新規則 live 重跑（今日額度已用完）。
+- 版本標示：11/14 預演的 CASE-04 dual 是修正前規則；W10 正式實驗用修正後規則。
+- 測試 `tests/test_review_pe_coverage.py` 新增 4 項（合成資料）；pytest 481 通過。

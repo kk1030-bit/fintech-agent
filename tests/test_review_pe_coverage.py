@@ -45,6 +45,34 @@ def test_pe_with_its_own_wrong_quarters_still_blocked():
     assert "c2" in ttm_flags(pe_draft(pe_period="2025Q4-2026Q2"), snap())
 
 
+# ----- 11/14（決策 35）：eps_ttm 的期間只寫結尾季 -----
+Q4 = ["2025Q3", "2025Q4", "2026Q1", "2026Q2"]
+
+
+def fin_snap(eps_ttm=86.28, periods=Q4):
+    return {"ticker": "2330", "evidences": [], "tool_numbers": [86.28, 28.74, 27.25],
+            "financial_snapshot": {"eps_ttm": eps_ttm, "ttm_periods": periods}}
+
+
+def test_eps_ttm_written_as_ending_quarter_passes_when_it_matches_the_snapshot():
+    assert ttm_flags(pe_draft(eps_period="2026Q2"), fin_snap()) == []  # eps_ttm 與用它的 pe_ttm 都不擋
+
+
+def test_single_quarter_eps_passed_off_as_ttm_is_still_blocked():
+    d = pe_draft(eps_period="2026Q2")
+    d["claims"][0]["facts"][0]["value"] = 27.25  # 單季 EPS，不等於快照的 TTM EPS
+    assert ttm_flags(d, fin_snap()) == ["c1", "c2"]
+
+
+def test_ending_quarter_must_be_the_snapshots_last_quarter():
+    assert ttm_flags(pe_draft(eps_period="2026Q1"), fin_snap()) == ["c1", "c2"]
+
+
+def test_ending_quarter_blocked_when_snapshot_quarters_are_not_consecutive_or_missing():
+    assert ttm_flags(pe_draft(eps_period="2026Q2"), fin_snap(periods=["2025Q2", "2025Q4", "2026Q1", "2026Q2"])) == ["c1", "c2"]
+    assert ttm_flags(pe_draft(eps_period="2026Q2"), snap()) == ["c1", "c2"]
+
+
 def obs(*tools):
     return [{"obs_id": f"obs-{i}", "tool_name": t, "status": "ok", "brief": "", "digest": ""} for i, t in enumerate(tools, 1)]
 

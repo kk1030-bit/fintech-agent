@@ -129,3 +129,13 @@ prompt 版本不變（researcher-v1.2.5、reviewer-v1.2.2），覆核規則不�
 | 19 | 快照的 `task_input`、`draft_under_review` 以同名欄位原樣放進可信輸入（三種模式與 Reviewer） | `agents/research_graph.py`（`CASE_INPUT_FIELDS`） | 只有帶這兩個欄位的快照；其他案例輸入不變 |
 
 **條件不同，不可直接比較**：到 11/12 為止的校準 v1、v2 與煙霧測試都是「送 `variant`」的條件；W10 正式實驗與之後的開發集預演是「送 `task`」的條件。每個 run 的紀錄以 `focus_source` 標示。報告引用時要註明。
+
+## v2 的 11/14 補修：覆核規則（組長 11/14 決定，決策 35）
+
+prompt 版本不變，只改覆核程式。
+
+| # | 變更 | 位置 | 案例 |
+|---|---|---|---|
+| 20 | 「TTM 要四個連續單季」：eps_ttm 的期間只寫結尾季（例如 2026Q2）時，若快照的 TTM 為連續四季、結尾季相同、數值等於快照的 eps_ttm，視為那四季；其餘情況照舊列 critical | `agents/review_checks.py`（`as_of_ttm_quarters`） | CASE-04（11/14 預演，算對卻被擋） |
+
+只會讓「數值與快照 TTM EPS 相同」的寫法通過；單季 EPS 當成 TTM 仍被擋。11/14 預演的 CASE-04 dual 是修正前規則。
