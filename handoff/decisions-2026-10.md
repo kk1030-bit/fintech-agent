@@ -319,3 +319,22 @@
 - 離線驗證（不花額度，用今晚的草稿與 job 內存的工具結果）：CASE-04 由證據不足改為通過、無任何問題項；CASE-01、19、22 結果不變。CASE-04 沒有以新規則 live 重跑（今日額度已用完）。
 - 版本標示：11/14 預演的 CASE-04 dual 是修正前規則；W10 正式實驗用修正後規則。
 - 測試 `tests/test_review_pe_coverage.py` 新增 4 項（合成資料）；pytest 481 通過。
+
+## 36. 2026-11-14 正式實驗前全面檢查（案例、runner、排程）；四件事待組長決定
+
+- 起因：組長 11/14 要求在鎖定前把案例相關問題全面檢查一遍。開發集 10 案逐案看內容；保留集 20 案只看數量、狀態代碼、欄位名稱、型別、長度與 hash，不看、不印內容。檢查程式都放在暫存目錄，不進 repo。
+- **檢查通過**
+  - 開發集 10 案：題目（`evaluation/dev-tasks.json`）都是中性問句；擾動都在快照來源或工具模擬裡，不在題目裡。CASE-26 逾時測不到（已知，決策 30）。
+  - 保留集無模型試跑：以固定腳本代替模型（不連線、不花額度），20 案 × 3 模式 × 3 種合成草稿 = 180 次，走正式 runner 同一條路徑，寫入暫存資料庫後刪除；沒有動 `tmp/formal_v2.sqlite3` 與 `evaluation/formal/`。結果：0 例外，三模式都能跑完；研究焦點等於案例 `task` 180／180；`task_input`、`draft_under_review` 原樣送達 Researcher（三模式）與 Reviewer（dual）；`variant`、`expected_*`、`required_elements` 等欄位沒有出現在 Agent 輸入；輸入估計最大 4,472（上限 6,000）；工具呼叫最多 8 次（上限 10）；每案可搜尋到的來源最多 4 筆，workflow 的「前 5 筆」讀得到全部。
+  - 覆核規則（含決策 35）以 8 種合成草稿 × 20 個保留快照試跑：無例外。
+  - 封存：三個封存檔的 hash 與 `fixtures/test/SEAL.json`、`evaluation/cases_manifest_v1.json` 一致；兩份封存案例檔內容相同。`check_cases.py`、`check_sources.py` 0 錯誤。
+  - 外洩掃描：比對 406 個受版控文字檔（不含封存檔與出題程式）。保留集的題目 0 筆、預期主張 0 筆、`task_input`／`draft_under_review`／`required_elements` 0 筆。變體名稱出現在 `data-freeze.md`、`evaluation/cases_manifest_v1.json` 等凍結文件（原本就列 30 案變體，不進 Agent 輸入）。另有 2 個 14 字的數字片語同時出現在保留集來源與開發／前瞻的 Agent 草稿，屬同一公開財報數字的相同寫法，不是外洩。
+  - 執行計畫：60 run、20 案與封存檔一致、每配額日 2 案 × 3 模式。`build_freeze.py --verify --strict` 只剩第二段 6 個檔不同，鎖定後會通過。
+- **發現的問題（待組長決定）**
+  1. **排程會卡住**：正式實驗排程用的 `scripts/formal_runs.py` 不在無人值守允許清單（`~/.claude/settings.json` 只列了 `dev_traces.py`、`forward_research.py` 等）。11/16 19:30 很可能停在等待核准（10/23、10/29 發生過同類情況）。需要加一條允許規則；這是放寬無人值守權限，要組長同意。
+  2. **TTM 覆核規則的修正在多數保留案不生效**：決策 28、35 讀的是「案例自帶的財報快照」。保留集 20 案中 18 案的財報由共用資料庫提供，覆核規則看不到工具回傳的 TTM 季度；另 2 案自帶財報快照但沒有 TTM 季度。以開發集 CASE-01（同樣由共用資料庫提供）實測，數字全部正確時：草稿寫出四季 → 通過；本益比以股價日期標示且草稿沒有另列 TTM EPS → 被擋；TTM EPS 只寫結尾季 → 被擋；本益比寫結尾季 → 被擋。
+  3. **覆核用的數字清單沒有套用工具模擬**：保留集有 1 案設定財報工具回 no_data，但覆核規則用來核對「數字是否出現在工具結果」的清單是直接讀資料產生的，仍含 12 個 Agent 沒拿到的財報數字。模型若憑記憶寫出相同數字，規則不會擋。
+     - 第 2、3 點的共同修法：覆核用的財報資料改成「這個 job 的工具實際回傳的內容」（套用工具模擬、帶上工具回傳的 TTM 季度與 TTM EPS）。屬 `agents/snapshot.py`、`agents/review_checks.py`，第二段。
+  4. **排程沒有緩衝、鎖定清單少兩支程式**：cron 是 11/16–11/25 共 10 天，剛好 60 run，任何一天沒跑就會缺；建議延到 11/30（跑滿 60 會自動回報完成）。另外「題目怎麼送」現在由 `scripts/dev_traces.py`、`scripts/formal_runs.py` 決定，但這兩支不在第二段鎖定清單，建議鎖定時列入。
+- **不擋實驗、待更新**：D 的 `evaluation/d-drafts/v12-runner-freeze.md` 仍寫研究焦點是「案例標題」（決策 31 後是 `task`）；`evaluation/run-plan.json` 的狀態仍是「待 D 確認」；鎖定時要產生 `handoff/v12-freeze.md`、`release/eval-version.json`。
+- **這次檢查沒有涵蓋**：真實模型的行為（試跑用固定腳本）；CASE-04 以決策 35 的規則 live 重跑；Notion 與 Canva 上有沒有保留集內容；排程工作階段遇到超過 10 分鐘的指令會如何處理。
