@@ -277,6 +277,8 @@ def _real_detail(v: dict[str, Any]) -> dict[str, Any]:
         "job_id": rep["job_id"], "claims": claims,
         "counter_evidence": rep.get("conflicts") or [], "next_signals": rep.get("next_signals") or [],
         "unknowns": rep.get("unknowns") or [],
+        # the same draft sections the PDF prints (report_pdf.py), so one report_version_id reads the same (W10-A)
+        "sections": {k: rep.get(k) or [] for k in OBSERVATION_KEYS},
         "limitations": (rep.get("limitations") or []) + (method.get("limitations") or []),
         "review": rep.get("review"), "disclaimer": rep.get("disclaimer"),
         "tables": {k: data.get(k) for k in ("scope", "scope_note", "quarters", "quarters_na_reason", "ttm", "price",
@@ -285,6 +287,11 @@ def _real_detail(v: dict[str, Any]) -> dict[str, Any]:
            "dcf_detail": (data.get("valuation") or {}).get("dcf_detail")},
         "history": _history(v),
     }
+
+
+# draft sections printed by the PDF after the claims, in the PDF's order (report_pdf.py)
+OBSERVATION_KEYS = ("macro_observations", "fundamental_observations", "valuation_scenarios", "conflicts",
+                    "negative_channels", "positive_channels", "unknowns", "next_signals")
 
 
 def _pdf_response(rv_id: str, disposition: str):

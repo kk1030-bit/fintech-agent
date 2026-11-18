@@ -634,9 +634,10 @@
           ${c.limitations && c.limitations.length ? `<div class="refs">限制：${c.limitations.map(esc).join("；")}</div>` : ""}
         </div>`;
       }).join("")}</div>
-      <div class="sub">反向證據</div>${list(r.counter_evidence)}
-      <div class="sub">下一個確認訊號</div>${list(r.next_signals)}
+      ${r.sections ? sectionsHtml(r.sections, list) : `<div class="sub">反向證據</div>${list(r.counter_evidence)}
+      <div class="sub">下一個確認訊號</div>${list(r.next_signals)}`}
       ${r.tables ? reportTables(r) : ""}
+      ${r.tables && r.tables.sources ? sourcesHtml(r.tables.sources, r.report_version_id) : ""}
       <div class="sub">方法與資料限制</div>${list(r.limitations)}
       ${r.history && r.history.length ? `<div class="sub">歷史版本（只列已發布）</div><ul class="plain">${r.history.map(h =>
         `<li><b>第 ${esc(h.version_no)} 版</b>・${fmtTime(h.published_at)}・<span class="mono">${esc(h.report_hash.slice(0, 12))}…</span>
@@ -745,6 +746,29 @@
 
   /* ---------------- W04: source drawer ---------------- */
   let lastFocus = null;
+  // Draft sections in the PDF's order and titles (report_pdf.SECTION_TITLES): the same report_version_id reads
+  // the same on the page and in the PDF (W10-A). Empty sections are left out, as in the PDF, except the two the
+  // page always showed (counter-evidence, next signal), which say 無.
+  const SECTION_TITLES = [["總經觀察", "macro_observations"], ["基本面觀察", "fundamental_observations"],
+    ["估值情境", "valuation_scenarios"], ["反向證據與矛盾", "conflicts"], ["負面因素", "negative_channels"],
+    ["正面因素", "positive_channels"], ["未知事項", "unknowns"], ["下一個確認訊號", "next_signals"]];
+  function sectionsHtml(sections, list) {
+    const text = x => typeof x === "string" ? x : JSON.stringify(x);
+    return SECTION_TITLES.map(([title, key]) => {
+      const items = (sections[key] || []).map(text);
+      if (!items.length && key !== "conflicts" && key !== "next_signals") return "";
+      return `<div class="sub">${title}</div>${list(items)}`;
+    }).join("");
+  }
+  // Every source the approved JSON lists (claims' references plus fragments the data checks used), as in the PDF.
+  function sourcesHtml(sources, reportId) {
+    if (!sources.length) return "";
+    return `<div class="sub">來源清單（${sources.length}）</div><ul class="plain source-list">${sources.map(s =>
+      `<li>${refButtons([{ id: s.id, exists: !!s.resolved }], reportId)}
+        ${s.resolved ? badge(s.kind === "observation" ? "已對應到來源" : "已解析", "b-ok") : badge("未解析", "b-bad")}
+        ${s.resolved ? "" : `<span class="hint">${esc(s.reason || "快照中找不到該片段")}</span>`}</li>`).join("")}</ul>`;
+  }
+
   // A cited tool observation (obs-*), traced through the job's own tool record (B, 11/15).
   const TOOL_TEXT = { read_evidence: "讀取來源片段", search_evidence: "搜尋來源", get_financial_snapshot: "財報快照",
     get_price_window: "股價視窗", get_macro_snapshot: "總經資料", calculate_metrics: "計算指標" };

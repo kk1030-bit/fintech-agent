@@ -35,6 +35,11 @@ KIND_TEXT = {"fact": "事實", "inference": "推論", "unknown": "未知"}
 LABEL_TEXT = {"MOCK": "MOCK 測試報告：模型決策為預錄腳本，工具結果為真實快照輸出；不是研究結論",
               "LIVE": None}
 
+# draft sections printed after the claims; the web page shows the same list in the same order (W10-A)
+SECTION_TITLES = (("總經觀察", "macro_observations"), ("基本面觀察", "fundamental_observations"),
+                  ("估值情境", "valuation_scenarios"), ("反向證據與矛盾", "conflicts"), ("負面因素", "negative_channels"),
+                  ("正面因素", "positive_channels"), ("未知事項", "unknowns"), ("下一個確認訊號", "next_signals"))
+
 
 def _tw(iso: str | None, seconds: bool = False) -> str:
     if not iso:
@@ -200,9 +205,7 @@ def render_report_pdf(report: dict[str, Any], version: dict[str, Any]) -> bytes:
         d.text(f"　來源：{', '.join(c.get('evidence_refs') or []) or '無（不能當作事實）'}", 8.5, color=MUTED)
         for lim in c.get("limitations") or []:
             d.text(f"　限制：{lim}", 8.5, color=MUTED)
-    for title, key in (("總經觀察", "macro_observations"), ("基本面觀察", "fundamental_observations"),
-                       ("估值情境", "valuation_scenarios"), ("反向證據與矛盾", "conflicts"), ("負面因素", "negative_channels"), ("正面因素", "positive_channels"),
-                       ("未知事項", "unknowns"), ("下一個確認訊號", "next_signals")):
+    for title, key in SECTION_TITLES:
         items = report.get(key) or []
         if items:
             d.text(title, 10, True, TEAL)
