@@ -15,6 +15,9 @@
 去掉的資訊（會洩漏模式）：mode、stop_reason、覆核紀錄、預算與發送次數、工具呼叫順序、Reviewer 的工具結果、
 執行時間。草稿是最後一版（dual 經覆核修正後的版本）。
 
+決策 47：供應商錯誤重跑過的 run，用重跑那一列（run_id 加 -r1）的結果，答卷不標示是否重跑；對照表記 rerun_of。
+還有供應商錯誤的 run 沒重跑時不匯出（scripts/formal_reruns.py）。
+
 這支程式讀封存案例與保留集草稿，只寫檔、不在終端印任何內容；組長與 Claude 不打開輸出檔。
 """
 
@@ -34,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import formal_reruns as frr  # noqa: E402
 import formal_runs as fr  # noqa: E402
 from agents.research_graph import CASE_INPUT_FIELDS  # noqa: E402
 from agents.snapshot import SnapshotToolbox, load_case_snapshot  # noqa: E402
@@ -88,13 +92,18 @@ def export(partial: bool = False, db: Path = fr.DB) -> dict:
     missing = [r["run_id"] for r in plan["runs"] if r["run_id"] not in done]
     if missing and not partial:
         sys.exit(f"還有 {len(missing)} 個 run 未執行，不匯出（試做請加 --partial）")
+    con = sqlite3.connect(db)
+    not_rerun = frr.eligible(plan, done, con)
+    if not_rerun and not partial:
+        con.close()
+        sys.exit(f"還有 {len(not_rerun)} 個供應商錯誤的 run 還沒重跑（決策 47），先執行 scripts/formal_reruns.py --live")
     if OUT.exists() and any(OUT.iterdir()):
+        con.close()
         sys.exit(f"{OUT} 已有檔案，不覆寫（盲評檔只產生一次）")
     cases = fr.load_holdout()
-    con = sqlite3.connect(db)
     jobs = {r[0]: json.loads(r[1]) for r in con.execute("select job_id, data from research_jobs")}
     con.close()
-    runs = [done[r["run_id"]] for r in plan["runs"] if r["run_id"] in done]
+    runs = [frr.analysis_row(done, r["run_id"]) for r in plan["runs"] if r["run_id"] in done]
     order = list(range(len(runs)))
     rng = secrets.SystemRandom()
     rng.shuffle(order)
@@ -106,9 +115,10 @@ def export(partial: bool = False, db: Path = fr.DB) -> dict:
             pass
         used.add(aid)
         answers.append({"answer_id": aid, **answer_for(run, jobs.get(run.get("job_id")), cases[run["case_id"]])})
-        key.append({"answer_id": aid, "run_id": run["run_id"], "mode": run["mode"], "job_id": run.get("job_id")})
+        key.append({"answer_id": aid, "run_id": run["run_id"], "mode": run["mode"], "job_id": run.get("job_id"),
+                    "rerun_of": run.get("rerun_of")})
     key_doc = {"experiment": fr.EXPERIMENT, "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-               "n": len(key), "partial": bool(missing), "key": key}
+               "n": len(key), "partial": bool(missing or not_rerun), "key": key}
     key_bytes = json.dumps(key_doc, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
     KEY.parent.mkdir(exist_ok=True)
     KEY.write_bytes(key_bytes)
@@ -119,7 +129,7 @@ def export(partial: bool = False, db: Path = fr.DB) -> dict:
     (OUT / "answers.md").write_text(render_md(answers), encoding="utf-8")
     for who in ("B", "D"):
         (OUT / f"score-template-{who}.txt").write_text(template(answers, who), encoding="utf-8")
-    commit = {"experiment": fr.EXPERIMENT, "n_answers": len(answers), "partial": bool(missing),
+    commit = {"experiment": fr.EXPERIMENT, "n_answers": len(answers), "partial": bool(missing or not_rerun),
               "key_sha256": hashlib.sha256(key_bytes).hexdigest(), "key_location": "組長 Mac tmp/formal_v2-scoring-key.json（不進 git）",
               "created_at": key_doc["created_at"],
               "rule": "B、D 都交出評分後才執行 --reveal；公開的對照表 sha256 必須與此相同"}

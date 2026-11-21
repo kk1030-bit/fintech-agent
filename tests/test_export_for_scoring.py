@@ -114,6 +114,34 @@ def test_export_shows_scorers_the_task_and_the_fields_given_to_the_agent(env, mo
     assert "NOT-EXPORTED" not in md
 
 
+def test_export_waits_for_the_rerun_and_then_scores_it_unlabelled(env):
+    """Decision 47 (lead 11/21): a run that ended on a provider error is scored from its rerun (-r1)."""
+    tmp, db = env
+    plan = json.loads((tmp / "plan.json").read_text(encoding="utf-8"))
+    failed = next(r for r in plan["runs"] if r["seq"] == 2)
+    con = sqlite3.connect(db)
+    con.execute("create table model_usage (usage_id integer primary key autoincrement, job_id text, outcome text)")
+    con.execute("insert into model_usage (job_id, outcome) values ('job-2', 'error_503')")
+    con.commit()
+    with pytest.raises(SystemExit):
+        ex.export(db=db)  # the rerun has not happened yet
+    rerun_job = {"job_id": "job-2r", "mode": failed["mode"], "status": "succeeded", "checkpoint": {"observations": []},
+                 "draft": {"status": "draft", "decision_summary": "R", "claims": []}}
+    con.execute("insert into research_jobs values (?, ?)", ("job-2r", json.dumps(rerun_job)))
+    con.commit()
+    con.close()
+    with (tmp / "runs.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"run_id": failed["run_id"] + "-r1", "case_id": failed["case_id"], "mode": failed["mode"],
+                            "job_id": "job-2r", "status": "succeeded", "rerun_of": failed["run_id"]}) + "\n")
+    ex.export(db=db)
+    text = (tmp / "out" / "answers.jsonl").read_text(encoding="utf-8")
+    answers = [json.loads(line) for line in text.splitlines()]
+    assert len(answers) == 9 and all(a["draft"] is not None for a in answers)
+    assert "-r1" not in text and "rerun" not in text
+    key = json.loads((tmp / "key.json").read_text(encoding="utf-8"))["key"]
+    assert [k["run_id"] for k in key if k["rerun_of"]] == [failed["run_id"] + "-r1"]
+
+
 def test_score_templates_carry_rubric_rows_and_the_file_name_reveal_expects(env):
     """11/16（B 提出，決策 42）：rubric 第六節的植入錯誤、拒答兩欄每份答卷都有；表頭寫明 --reveal 認的檔名。"""
     tmp, db = env
