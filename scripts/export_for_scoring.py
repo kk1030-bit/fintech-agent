@@ -15,8 +15,8 @@
 去掉的資訊（會洩漏模式）：mode、stop_reason、覆核紀錄、預算與發送次數、工具呼叫順序、Reviewer 的工具結果、
 執行時間。草稿是最後一版（dual 經覆核修正後的版本）。
 
-決策 47：供應商錯誤重跑過的 run，用重跑那一列（run_id 加 -r1）的結果，答卷不標示是否重跑；對照表記 rerun_of。
-還有供應商錯誤的 run 沒重跑時不匯出（scripts/formal_reruns.py）。
+決策 47、48：因供應商錯誤重跑過的 run，用最新一次（run_id 加 -rN）的結果，答卷不標示是否重跑；對照表記 rerun_of。
+還有供應商錯誤沒跑完的 run 時不匯出（scripts/formal_reruns.py 重跑到跑完為止）。
 
 這支程式讀封存案例與保留集草稿，只寫檔、不在終端印任何內容；組長與 Claude 不打開輸出檔。
 """
@@ -96,7 +96,7 @@ def export(partial: bool = False, db: Path = fr.DB) -> dict:
     not_rerun = frr.eligible(plan, done, con)
     if not_rerun and not partial:
         con.close()
-        sys.exit(f"還有 {len(not_rerun)} 個供應商錯誤的 run 還沒重跑（決策 47），先執行 scripts/formal_reruns.py --live")
+        sys.exit(f"還有 {len(not_rerun)} 個因供應商錯誤沒跑完的 run（決策 47、48），先執行 scripts/formal_reruns.py --live")
     if OUT.exists() and any(OUT.iterdir()):
         con.close()
         sys.exit(f"{OUT} 已有檔案，不覆寫（盲評檔只產生一次）")
