@@ -1,7 +1,7 @@
 # W08 中期狀態（W08-status）
 
-- 任務 ID：W08-C｜整理人：C｜版本：第 3 版（2026-11-17；第 1 版經 PR #39、第 2 版經 PR #44 合併）
-- 範圍：W08（2026-11-02–11-06）各人交付在 main 的情況、八件成果的證據狀態、核心凍結與未完成項。內容截至 2026-11-17 main（commit fe81930）。
+- 任務 ID：W08-C｜整理人：C｜版本：第 4 版（2026-11-24；第 1 版經 PR #39、第 2 版經 PR #44、第 3 版經 PR #53 合併）
+- 範圍：W08（2026-11-02–11-06）各人交付在 main 的情況、八件成果的證據狀態、核心凍結與未完成項。內容截至 2026-11-24 main（commit 0e2e787）。
 - 判定方式：只依 main 上的檔案與各檔自己標示的驗收狀態，不用完成百分比。正式文字與限制段落見 `docs/v12-limitations-midterm.md`（論文用）與 `report/limitations-v1.docx`。
 - W08-C 本身逾期：原期限 11/06，實際 11/11 交件。
 
@@ -12,9 +12,9 @@
 | W08-L 組長 | `handoff/deployment-v1.md`、`handoff/backup-restore-log.md`、`research/forward-batch-2.json`、`operations/v12-resource-gate.md` | ✅ | 驗收人：A 與 D 技術交叉檢查、組長定案 | 部署第 1–7、10 步完成；第 8 步部分（Free 看不到記憶體圖）；第 9 步未執行；第 11 步 F06 依決定延後（`deployment-v1.md` 第四節） |
 | W08-A | `design/performance-w08.md`、UI 修正、`ui/v12-graph-check.md`、`performance/v12-read-only.json` | ✅ | 「驗收人：組長（尚未驗收）」 | 本機容器測試，不是 Render；提出 CR-W08-A1～A3 |
 | W08-B | `data/storage-and-safety-w08.md`、`research/forward-batch-2-sources.json`、`data/v12-capacity-and-graph-audit.md` | ✅ | B 自查：80% 停止線 🟡（原則採用、程式未實作），其餘 ✅（`docs/B-W01-W09-acceptance.md`） | 驗收人：D、組長 |
-| W08-C | `report/limitations-v1.docx`、`W08-status.md`、`docs/v12-limitations-midterm.md` | ✅（PR #39，11/13 合併） | B 11/14 核對技術事實，5 處已依意見修正（第 2 版） | 驗收人：B（技術事實）、組長（文字） |
+| W08-C | `report/limitations-v1.docx`、`W08-status.md`、`docs/v12-limitations-midterm.md` | ✅（PR #39，11/13 合併） | B 11/14、11/17、11/24 三輪核對技術事實，意見都已修正（第 2–4 版） | 驗收人：B（技術事實）、組長（文字） |
 | W08-D | `evaluation/fault-and-security-w08.md`、`evaluation/v12-load-graph-check.md` | ✅（PR #27，11/07 補交） | 檔頭「尚未驗收」；B 11/07 核對通過（`docs/B-review-W08-D.md`）；組長 11/08 合併時補註 | 全部為離線 mock；真實 DB 暫失未執行 |
-| W08-E | `slides/deck-v7.pptx`、`artifact-index-w08.md`、`slides/v12-graph-and-limits.pptx` | 部分：`artifact-index-w08.md` 與 `deck-W08-E-integrated-v1.pdf`（PR #42，11/13 合併）；兩個指定檔名的 pptx 尚未在 main | — | 簡報依 `AGENTS.md` 第五節重做後再交，日期由組長與 E 約定（decisions 第 33 節） |
+| W08-E | `slides/deck-v7.pptx`、`artifact-index-w08.md`、`slides/v12-graph-and-limits.pptx` | ✅（PR #42、#50）：`artifact-index-w08.md`、`artifact-index-w08-2.md`、`v12-graph-and-limits.pptx`、`deck-v7.pptx.pdf`，放在 repo 根目錄 | — | `deck-v7` 交的是 PDF，手冊指定的可編輯 pptx 待 E 確認；簡報依 `AGENTS.md` 第五節重做（decisions 第 33 節） |
 
 ## 二、八件成果的證據狀態
 
@@ -26,9 +26,9 @@
 | 2 | Researcher／Reviewer 閉環 | 已簽核，附限制（N07，11/06） | 正式評估進行中（第二段 11/15 已鎖定） |
 | 3 | 來源、動作、版本、預算、停止原因可追溯 | 有證據 | Agent v2 停止原因待正式評估驗證 |
 | 4 | 三份研究 PDF | 部分達成：2317、2330 已發布（Agent v1） | 2454 沒有 LIVE 已發布報告（前瞻第 3 批通過覆核，是否發布待組長決定） |
-| 5 | 30 案三模式執行與評分紀錄 | 開發集有評分紀錄；保留集正式評估 11/16 開始（第 1 天後 6／60） | 60 run 到 11/25；評分 W11 |
+| 5 | 30 案三模式執行與評分紀錄 | 開發集有評分紀錄；保留集正式評估 11/16 開始（到 11/23 為 48／60） | 60 run 到 11/25；5 個供應商錯誤的 run 11/26 重跑；評分 W11 |
 | 6 | 論文 20–25 頁 | 進行中（第四章已在 main；研究問題已統一，PR #45） | 第五、六章 |
-| 7 | 簡報、講稿、展示與錄影 | 進行中 | E 的簡報重做、W13 錄影 |
+| 7 | 簡報、講稿、展示與錄影 | 進行中（E 的 W08、W09 簡報已在 main） | deck-v7 的可編輯檔、W13 錄影 |
 | 8 | 版本、設定、測試、來源交接包 | 進行中 | 交接包 W12–W13 |
 
 ## 三、核心凍結
@@ -39,6 +39,7 @@
 | 第一段修訂 1（補齊歷史股價） | 11/11 組長決定，cases_digest 不變（`data-freeze.md` 第八節、decisions 第 25 節） |
 | 第一段修訂 2（前瞻第 3 批聯發科負債覆寫） | 11/13 組長端修正，cases_digest 不變；B 11/14 複核通過（`data-freeze.md` 第八節、decisions 第 32 節；B `research/forward-batch-3-audit.md` 第三節） |
 | 第二段（10 支 Agent 程式、2 支 runner、2 個 prompt，共 14 個檔） | 2026-11-15 19:32 鎖定；60 run 跑完前不修改（decisions 第 41 節；`release/eval-version.json`、`handoff/v12-freeze.md`） |
+| 評分規則檔 | 11/16 凍結的 `rubric-v1-final.md` 被修改，11/17 正式實驗停一天後還原；B 11/17 簽署的 v1 另存為 `rubric-v1-confirmed-1116.md`（decisions 第 45 節） |
 | W06 介面凍結 | 見 `W06-freeze-minutes.md`；F06 不在凍結範圍（延後） |
 
 ## 四、未完成項與提供人
@@ -46,14 +47,14 @@
 | 項目 | 提供人 | 影響哪項成果 |
 |---|---|---|
 | 2454 LIVE 已發布報告（第 3 批是否發布） | 組長 | 4 |
-| 保留集 60 run（11/16 開始、到 11/25）與 B、D 盲評（W11） | 組長、D、B | 5、6 |
+| 保留集 60 run（11/16 開始、到 11/25）、供應商錯誤重跑（11/26）與 B、D 盲評（W11） | 組長、D、B | 5、6 |
 | 前瞻 1、5、20 日報酬 | D | 5、6 |
 | Render 實際記憶體峰值、是否升級 2GB | 組長 | 1、4 |
 | 容量 80% 停止線實作 | 組長 | 8 |
 | 真實資料庫暫失、20 個並行請求測試 | 組長、D | 8 |
 | 手機實機測試 | A | 1 |
 | CR-W08-A1（舊 `/api/analyze` 無授權）、A2（PDF 峰值）、A3（核准按鈕） | 組長決定 | 1、4 |
-| E 的 W08 簡報（重做後交） | E | 7 |
+| deck-v7 的可編輯 pptx（目前交的是 PDF） | E | 7 |
 
 ## 五、已結案的核對
 
