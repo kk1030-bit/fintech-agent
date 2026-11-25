@@ -2,7 +2,7 @@
 title: "運維限制與中期狀態"
 ---
 
-> **版本說明：** 第 3 版（2026-11-17），W08-C。第 1 版經 PR #39、第 2 版經 PR #44 合併；第 3 版依 B 2026-11-17 的核對補 2.2、2.3 與修訂 2 複核結果，並同步組長決策第 40–44 節（第二段鎖定、正式實驗開始）。內容截至 2026-11-17 main（commit fe81930）。每項技術敘述後的括號為來源檔與提供人；數字照抄來源，C 沒有自行計算或判斷正確性。實驗結果只引用 D 交出的檔案；Agent v1 與 v2 的結果分開寫、不放同一張表；不含任何保留案例的內容。第一、二節可直接併入論文第六章「研究限制」，第三節是中期狀態，供組長簽收與 E 的簡報第 10、15 頁使用。
+> **版本說明：** 第 4 版（2026-11-24），W08-C。第 1 版經 PR #39、第 2 版經 PR #44、第 3 版經 PR #53 合併；第 4 版依 B 2026-11-24 的核對補 2.3 的輸出截斷，並同步組長決策第 45–48 節（評分規則檔還原與另存、供應商錯誤與重跑）。內容截至 2026-11-24 main（commit 0e2e787）。每項技術敘述後的括號為來源檔與提供人；數字照抄來源，C 沒有自行計算或判斷正確性。實驗結果只引用 D 交出的檔案；Agent v1 與 v2 的結果分開寫、不放同一張表；不含任何保留案例的內容。第一、二節可直接併入論文第六章「研究限制」，第三節是中期狀態，供組長簽收與 E 的簡報第 10、15 頁使用。
 
 ## 一、運維限制
 
@@ -14,7 +14,9 @@ title: "運維限制與中期狀態"
 
 每個 job 的硬上限為 8 次模型發送（含重試）、10 次工具呼叫、2 輪補查、180 秒主動時間。Agent v2（2026-11-06 起）的單次輸入上限為 6,000 token、每 job 64,000 token；Agent v1 曾使用 3,000 與 40,000（組長 `handoff/agent-version-changes.md`）。
 
-這些限制的影響是：正式評估的保留集 20 案 × 3 模式＝60 run 必須分 10 個配額日執行（11/16–11/25，每天 6 run），期間不安排其他 Gemini 用途；正式評估期間不重跑，若要重跑須另發實驗版本（組長 decisions 第 22 節；D `evaluation/d-drafts/v12-runner-freeze.md` 第三節）。額度用完而尚未執行的 run（`paused_quota`）不寫紀錄，下一個配額日以同一個 run_id 先跑（D `evaluation/d-drafts/runner-smoke.md` 第五節）。任何一天沒跑，剩下的 run 由組長決定何時手動補跑，每個配額日仍不超過 6 個（組長 decisions 第 37 節）。
+這些限制的影響是：正式評估的保留集 20 案 × 3 模式＝60 run 必須分 10 個配額日執行（11/16–11/25，每天 6 run），期間不安排其他 Gemini 用途；已有紀錄的 run 不重跑，要改程式須另發實驗版本（組長 decisions 第 22 節；D `evaluation/d-drafts/v12-runner-freeze.md` 第三節）。唯一的例外是供應商錯誤，見下段。額度用完而尚未執行的 run（`paused_quota`）不寫紀錄，下一個配額日以同一個 run_id 先跑（D `evaluation/d-drafts/runner-smoke.md` 第五節）。任何一天沒跑，剩下的 run 由組長決定何時手動補跑，每個配額日仍不超過 6 個（組長 decisions 第 37 節）；11/17 就因評分規則檔被改、開跑前的嚴格核對停止，當晚補跑（同上第 45 節）。
+
+免費層的另一個限制是**供應商暫時錯誤**。正式評估期間 Gemini 多次回 `503 UNAVAILABLE`（伺服器需求過高）。程式遇到 5xx 或逾時會自動重試一次，但每次重試都算進該 job 的 8 次發送；到 11/23 為止的 48 run 中，有 8 個 run 遇到 503，其中 3 個重試後跑完、5 個沒有跑完，紀錄上分別是失敗或證據不足，實際原因都是供應商錯誤（組長 `evaluation/formal-v2-provider-errors.md`，依決策 44 只寫總數）。組長決定這類 run 在 60 run 跑完後於 11/26 起重跑到跑完為止，不修改被鎖定的程式；重跑日 job 上限放寬到 50，每日 80% 額度的上限不變；原紀錄與每次重跑都保留，報告列出重跑數量（組長 decisions 第 46–48 節）。
 
 ### 1.2　伺服器記憶體與部署
 
@@ -65,7 +67,7 @@ D 的故障與安全測試（429、逾時、worker 中斷、未授權、假引�
 
 - P/E 數值的規則只確認數值「來自某個工具結果」，不檢查計算時用的是哪一天的股價、哪一種 EPS，這部分仍靠模型覆核（組長 decisions 第 38 節）。實例：前瞻第 3 批 2317 的草稿寫「依最近交易日收盤價」，但本益比 15.91 是用 11/11 收盤 242.0 算的；最近交易日 11/13 收盤 241.0，應為 15.84，覆核沒有發現（B `research/forward-batch-3-audit.md` 第五節）。
 - Agent 的執行紀錄只保存工具結果與參數雜湊，不保存 `calculate_metrics` 的輸入數值，所以用它算出的本益比等數值，發布時的「來源可追溯」可能被判缺來源；根本修正須改第二段鎖定的程式，只能在 60 run 跑完後另議（組長 decisions 第 43 節）。
-- 單次輸出達 1,500 token 上限時，草稿不是完整 JSON，程式記為「證據不足」，停止代碼沒有和真正的證據不足分開標示（`handoff/v12-freeze.md` 第六節第 3 點）。
+- 單次輸出達 1,500 token 上限時，草稿不是完整 JSON，程式記為「證據不足」，停止代碼沒有和真正的證據不足分開標示（`handoff/v12-freeze.md` 第六節第 3 點）。正式評估的前 12 run 也查到輸出被截斷或格式無效的情形，所以結果分析時「格式失敗」與「判定證據不足」分開計算（組長 decisions 第 45 節）。
 - 「TTM EPS 只寫結尾季」「本益比寫結尾季」「財報工具回 no_data」三條規則路徑，以及 `read_evidence` 逾時處理，都只有離線測試為證，不能寫成 live 驗證過（同上第 1、4 點；組長 decisions 第 30、40 節）。
 - 案例快照的 `search_evidence` 不論查詢字串都回同一組來源，dual 的 Researcher 第一輪只有 3 個工具回合，重複搜尋會把回合用完；同一題在不同次執行可能一次通過、一次停在證據不足（11/14、11/15 的 CASE-22），每個 run 只跑一次、不重跑挑結果（同上第 6、8 點；組長 decisions 第 40 節）。
 
@@ -73,7 +75,7 @@ D 的故障與安全測試（429、逾時、worker 中斷、未授權、假引�
 
 9 份前瞻觀察（3 批 × 2330、2317、2454）全部保留在清單，失敗與證據不足的也不刪；方向一律記為 none，不計方向命中（B `evaluation/v12-forward-manifest.csv`；D `v12-runner-freeze.md` 第四節）。9 份是小樣本，不能據此做廣泛的預測主張。前瞻第 1、2 批用 Agent v1、第 3 批用 Agent v2，逐份標示版本、不放同一張表（組長 `handoff/agent-version-changes.md`）。第 3 批的 20 日觀察落在 12/11 定稿日，收盤 17:30 才可得，截取早於 17:30 記 NA（B 同上）。1、5、20 日報酬由 D 的程式依實際價格計算，目前**待 D 提供**。
 
-第 3 批（Agent v2）於 11/13 截止後執行：快照程式因聯發科新增科目缺值而中止，組長端補人工覆寫（第一段凍結修訂 2）後手動執行，晚於截止 16 分鐘；執行狀態為 2330 證據不足、2317 與 2454 通過覆核，三份都未發布（組長 decisions 第 32 節；`research/forward-batch-3.json`）。其中 2330 的「證據不足」是 Researcher 最後一次輸出不是合格 JSON、程式判定草稿無效而停止，原因是輸出格式，不是證據真的不夠（B `research/forward-batch-3-audit.md` 第五節）。這是執行狀態，不是報酬或評分結果。
+第 3 批（Agent v2）於 11/13 截止後執行：快照程式因聯發科新增科目缺值而中止，組長端補人工覆寫（第一段凍結修訂 2）後手動執行，晚於截止 16 分鐘；執行狀態為 2330 證據不足、2317 與 2454 通過覆核，三份都未發布（組長 decisions 第 32 節；`research/forward-batch-3.json`）。其中 2330 的「證據不足」是 Researcher 最後一次輸出達到單次 1,500 token 上限被截斷、不是合格 JSON，程式判定草稿無效而停止，原因是輸出格式，不是證據真的不夠（`handoff/v12-freeze.md` 第六節第 3 點）（B `research/forward-batch-3-audit.md` 第五節）。這是執行狀態，不是報酬或評分結果。
 
 **B 的證據範圍疏失**：第 1、2 批的前瞻證據檔漏放 30 案快照裡的 5 段第二季公告原文（因為產生證據檔的參數是取代、不是附加）；季度數字不受影響，只是 Agent 讀不到第二季公告原文。第 1、2 批已凍結不補，第 3 批已補上；跨批比較時須註明這個差異（B `evaluation/source-audit-final.md` 第 63 行）。
 
@@ -99,10 +101,10 @@ D 的故障與安全測試（429、逾時、worker 中斷、未授權、假引�
 | 2 | Researcher／Reviewer 閉環，含補查修正與證據不足停止 | N07 11/06 簽核（附限制）；CASE-08 dual（d8884abc）覆核發現衝突、退回修正後停在證據不足（組長 `W06-gate-v12.md` 第 2 節） | **已簽核，附限制（2.2 節）**。Agent v2 第一筆「覆核要求補查 → 修正 → 通過」的紀錄是 11/14 開發集預演的 CASE-19 dual（組長 decisions 第 35 節）。缺口：正式評估 11/16 開始，評分排 W11（組長、D） |
 | 3 | 可追溯的來源、動作、模型／提示詞版本、預算與停止原因 | 每份前瞻報告記模型、prompt 版本、停止原因與 commit（B `v12-forward-manifest.csv`）；B 對 W07 三份驗收版報告的稽核 39 項全部 pass（B `docs/B-review-W02-W07-C.md` 第一節）；來源可追溯改為財報三檔組合 hash＋實際引用片段（組長 decisions 第 20 節） | **有證據**。缺口：Agent v1 的停止理由由模型自述、常與紀錄不符；Agent v2 改由程式產生，待正式評估驗證（組長、D） |
 | 4 | 網站可預覽、下載且與核准內容一致的三份研究 PDF | 2317、2330 兩檔 LIVE 報告已在 Render 發布，報告第 2 版 11/09 發布，PDF 可下載；兩份都由 Agent v1 產生；11/02 下載 PDF 的 hash 與版本紀錄一致（組長 decisions 第 20、34 節、`deployment-v1.md` 第四節；B `v12-forward-manifest.csv`） | **部分達成**。缺口：**2454 目前沒有 LIVE 已發布報告**：前瞻第 1、2 批停在證據不足，第 3 批（Agent v2）通過覆核但尚未發布，是否只發布 2454 待組長決定（組長 decisions 第 32、43 節）；2454 只有 MOCK 驗收版（組長） |
-| 5 | 30 案（10 開發／20 保留）三模式執行與評分原始紀錄 | 開發集校準 v1 的 30 列已由 D 評分、B 交叉評分、組長 11/06 簽核；Agent v2 dual 開發集 D 已評分；11/14 以 `task` 題目預演開發集 6 run；第二段 11/15 鎖定後，正式評估 11/16 開始，第 1 天後進度 6／60（D `runner-smoke.md`、`v12-runner-freeze.md`；組長 decisions 第 41、44 節） | **開發集有評分紀錄；保留集正式評估進行中**。依組長 decisions 第 44 節，公開對照表前只寫總進度，不寫各案例或各模式的結果。缺口：60 run 到 11/25，評分排 W11（組長、D、B） |
+| 5 | 30 案（10 開發／20 保留）三模式執行與評分原始紀錄 | 開發集校準 v1 的 30 列已由 D 評分、B 交叉評分、組長 11/06 簽核；Agent v2 dual 開發集 D 已評分；11/14 以 `task` 題目預演開發集 6 run；第二段 11/15 鎖定後，正式評估 11/16 開始，到 11/23 進度 48／60，另有 5 個供應商錯誤的 run 待 11/26 重跑（D `runner-smoke.md`、`v12-runner-freeze.md`；組長 decisions 第 41、44、48 節、`evaluation/formal-v2-provider-errors.md`） | **開發集有評分紀錄；保留集正式評估進行中**。依組長 decisions 第 44 節，公開對照表前只寫總進度，不寫各案例或各模式的結果。缺口：60 run 到 11/25、供應商錯誤重跑 11/26，之後才匯出盲評，評分排 W11（組長、D、B） |
 | 6 | 正文 20–25 頁論文，可編輯檔與 PDF | 第一至三章素材已核准（C 文稿，組長 decisions 第 19 節）；`report/chapter-03-v1.docx`、`system-cases-v1.docx`；第四章實驗設計 `report/chapter-04-v1.docx`（W09-C）；E `report/draft-01-03.docx` | **進行中**。研究問題已統一為手冊第 06 章的 RQ1–RQ3（PR #45，11/16 合併）。缺口：結果與討論 W11（需 D 的正式評估結果）、全文 W12、定稿 W13（C、D、E） |
-| 7 | 16 張主投影片＋4 張備用、10 分鐘講稿、3 分鐘展示與備援錄影 | E 中期簡報 `slides/deck-v5.pptx`、W07 簡報、`demo/script-v1.md`；E 的 W08 整合簡報 PDF 與 `artifact-index-w08.md`（PR #42，11/13 合併）；A 的 W09 展示影片 2 支（組長 decisions 第 33、34 節） | **進行中**。缺口：E 的簡報依 `AGENTS.md` 第五節重做中，指定檔名的 `slides/deck-v7.pptx`、`v12-graph-and-limits.pptx` 尚未在 main；展示以標明「重播」的 Agent v2 真實紀錄呈現，不在現場執行；錄影排 W13（E、A） |
-| 8 | 程式版本、脫敏設定、測試、來源與交接包 | 離線測試 516 項通過（組長 decisions 第 43 節）；版本鎖定紀錄 `release/eval-version.json`、`handoff/v12-freeze.md`；部署、備份還原、凍結與版本紀錄都在 `handoff/`、`data-freeze.md` | **進行中**。缺口：交接包排 W12–W13（組長、B） |
+| 7 | 16 張主投影片＋4 張備用、10 分鐘講稿、3 分鐘展示與備援錄影 | E 中期簡報 `slides/deck-v5.pptx`、W07 簡報、`demo/script-v1.md`；E 的 W08 整合簡報 PDF 與 `artifact-index-w08.md`（PR #42，11/13 合併）；E 依 `AGENTS.md` 第五節重做的 W08 簡報 `v12-graph-and-limits.pptx`、`deck-v7.pptx.pdf`、`artifact-index-w08-2.md`（PR #50）與 W09 簡報（PR #51）；A 的 W09 展示影片 2 支（組長 decisions 第 33、34 節） | **進行中**。缺口：`deck-v7` 交的是 PDF（檔名 `deck-v7.pptx.pdf`），手冊指定的可編輯 pptx 待 E 確認；展示以標明「重播」的 Agent v2 真實紀錄呈現，不在現場執行；錄影排 W13（E、A） |
+| 8 | 程式版本、脫敏設定、測試、來源與交接包 | 離線測試 540 項通過（組長 decisions 第 48 節）；版本鎖定紀錄 `release/eval-version.json`、`handoff/v12-freeze.md`；部署、備份還原、凍結與版本紀錄都在 `handoff/`、`data-freeze.md` | **進行中**。缺口：交接包排 W12–W13（組長、B） |
 
 ### 3.2　核心凍結
 
@@ -112,15 +114,16 @@ D 的故障與安全測試（429、逾時、worker 中斷、未授權、假引�
 | 第一段修訂 1 | 補齊歷史股價（案例檔與 cases_digest 不變） | 2026-11-11 組長決定，原簽核保留，修訂由組長負責 | `data-freeze.md` 第八節；decisions 第 25 節 |
 | 第一段修訂 2 | 前瞻第 3 批的聯發科負債人工覆寫（30 案的財報快照沒有重建，cases_digest 不變） | 2026-11-13 組長端修正；B 11/14 以公開資訊觀測站資產負債表複核通過（B `research/forward-batch-3-audit.md` 第三節） | `data-freeze.md` 第八節；decisions 第 32 節 |
 | 第二段 | Researcher／Reviewer prompt、Agent 程式、兩支 runner、預算上限，共 14 個檔（10 支 Agent 程式、2 支 runner、2 個 prompt） | **2026-11-15 19:32 鎖定**，hash 記入 `data/v12-frozen-manifest.json`；60 run 跑完前不修改，必須修改時改用新的實驗版本代號 | decisions 第 41 節；`release/eval-version.json`、`handoff/v12-freeze.md` |
+| 評分規則檔 | 第一段凍結的 `rubric-v1-final.md` 11/16 被修改，11/17 開跑前的嚴格核對停止 | 凍結檔已還原；B 11/17 簽署的評分規則 v1 另存為 `rubric-v1-confirmed-1116.md`，評分時指定章節照它；60 run 後由組長決定是否併回 | decisions 第 45 節 |
 
 鎖定後只修程式錯誤；若修正會影響實驗，須另發實驗版本（組長 `handoff/W06-gate-v12.md` 第 3 節）。
 
 ### 3.3　未完成項與提供人
 
 | 項目 | 原因 | 提供人 |
-|------------------------------|--------------------------------------------------|--------------------|
+|--------------------------|--------------------------------------------------------|-------------------|
 | 2454 的 LIVE 已發布報告 | 第 1、2 批停在證據不足；第 3 批通過覆核，是否發布待組長決定 | 組長 |
-| 保留集 60 run 與評分 | 11/16 開始、到 11/25，評分 W11 | 組長、D、B |
+| 保留集 60 run 與評分 | 11/16 開始、到 11/25；供應商錯誤的 run 11/26 起重跑；之後匯出盲評，評分 W11 | 組長、D、B |
 | 前瞻 1、5、20 日報酬 | 等價格成熟後由 D 的程式計算 | D |
 | Render 上的實際記憶體峰值 | Free 方案沒有記憶體圖 | 組長（是否升級另行決定） |
 | 容量 80% 停止線寫進發布流程 | 原則採用，尚未實作 | 組長 |
@@ -130,7 +133,7 @@ D 的故障與安全測試（429、逾時、worker 中斷、未授權、假引�
 
 ## 資料來源
 
-- 組長：`handoff/decisions-2026-10.md`（第五、10–44 節）、`handoff/quota-baseline.json`、`handoff/quota-test-log.md`、`handoff/deployment-v1.md`、`handoff/backup-restore-log.md`、`handoff/W06-gate-v12.md`、`handoff/agent-version-changes.md`、`operations/v12-resource-gate.md`、`data-freeze.md` 第七、八節
+- 組長：`handoff/decisions-2026-10.md`（第五、10–48 節）、`handoff/quota-baseline.json`、`handoff/quota-test-log.md`、`handoff/deployment-v1.md`、`handoff/backup-restore-log.md`、`handoff/W06-gate-v12.md`、`handoff/agent-version-changes.md`、`operations/v12-resource-gate.md`、`data-freeze.md` 第七、八節
 - A：`design/performance-w08.md`、`ui/v12-graph-check.md`、`ui/v12-dashboard-acceptance.md`、`design/research-flow.md`、`design/w08/e-render/README.md`
 - B：`data/storage-and-safety-w08.md`、`data/v12-capacity-and-graph-audit.md`、`evaluation/v12-forward-manifest.csv`、`docs/B-W01-W09-acceptance.md`、`docs/B-review-W08-D.md`
 - D：`evaluation/fault-and-security-w08.md`、`evaluation/v12-load-graph-check.md`、`evaluation/d-drafts/calib-v1-scores-D.txt`、`calib-v2-scores-D.txt`、`runner-smoke.md`、`v12-runner-freeze.md`
