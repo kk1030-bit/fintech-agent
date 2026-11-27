@@ -1,0 +1,9 @@
+{
+  "experiment": "formal-v2",
+  "n_answers": 60,
+  "partial": false,
+  "key_sha256": "55c6d1e40ff5167f20110155721e6d208d34793cca6ac39d920894b3883fba6f",
+  "key_location": "組長 Mac tmp/formal_v2-scoring-key.json（不進 git）",
+  "created_at": "2026-11-27T16:36:35+00:00",
+  "rule": "B、D 都交出評分後才執行 --reveal；公開的對照表 sha256 必須與此相同"
+}
